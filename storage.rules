@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /books/{userId}/{bookId}/{fileName} {
+      allow read, delete: if owns(userId);
+      allow create, update: if owns(userId) && (
+        (fileName in ['reading', 'reading.pdf', 'reading.epub'] &&
+          request.resource.size <= 104857600 &&
+          request.resource.contentType in [
+            'application/pdf',
+            'application/epub+zip'
+          ]) ||
+        (fileName == 'audio' &&
+          request.resource.size <= 2147483648 &&
+          request.resource.contentType.matches('audio/.*'))
+      );
+    }
+
+    match /covers/{userId}/{fileName} {
+      allow read, delete: if owns(userId) && fileName.matches('.*\\.jpg');
+      allow create, update: if owns(userId) &&
+        fileName.matches('.*\\.jpg') &&
+        request.resource.size <= 10485760 &&
+        request.resource.contentType.matches('image/.*');
+    }
+  }
+}

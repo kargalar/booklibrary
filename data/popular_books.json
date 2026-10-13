@@ -1,0 +1,270 @@
+{
+  "retrieved_at": "2026-09-12",
+  "notes": [
+    "ISBN değerleri baskı/edisyon bazlıdır; aynı eser farklı baskılarda farklı ISBN taşıyabilir.",
+    "Liste sıraları kaynakların kendi popülerlik ölçümleridir; tek bir ortak sıralama değildir."
+  ],
+  "sources": [
+    {
+      "id": "kitapyurdu_weekly",
+      "name": "Kitapyurdu",
+      "basis": "Son 7 günde en çok satın alınanlar",
+      "url": "https://www.kitapyurdu.com/cok-satan-kitaplar/haftalik/1.html",
+      "limit": 20
+    },
+    {
+      "id": "amazon_tr_2025",
+      "name": "Amazon.com.tr",
+      "basis": "2025 yılı toplam satışları",
+      "url": "https://www.aa.com.tr/tr/isdunyasi/e-ticaret/amazoncomtrde-2025te-en-cok-satilan-kitaplar-belli-oldu/699684",
+      "limit": 10
+    },
+    {
+      "id": "1000kitap_most_read",
+      "name": "1000Kitap",
+      "basis": "Okurların okuduklarını belirtme sayısı",
+      "url": "https://1000kitap.com/kesfet/en-cok-okunan-kitaplar",
+      "limit": 7
+    }
+  ],
+  "books": [
+    {
+      "title": "Muhabbet",
+      "author": "Virginia Evans",
+      "isbn": "9786256756205",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/muhabbet/755129.html",
+      "source_ranks": { "kitapyurdu_weekly": 1 }
+    },
+    {
+      "title": "Taş Kağıt Makas",
+      "author": "Alice Feeney",
+      "isbn": "9786258387711",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/tas-kagit-makas/643859.html",
+      "source_ranks": { "kitapyurdu_weekly": 2 }
+    },
+    {
+      "title": "Kocamın Karısı",
+      "author": "Alice Feeney",
+      "isbn": "9786256826830",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/kocamin-karisi/757325.html",
+      "source_ranks": { "kitapyurdu_weekly": 3 }
+    },
+    {
+      "title": "Erişkin Acil Servis Order-Reçete El Kitabı",
+      "author": "Uzm. Dr. Muhammed Emrullah Yıldırım",
+      "isbn": "9786253911553",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/eriskin-acil-servis-orderrecete-el-kitabi/688734.html",
+      "source_ranks": { "kitapyurdu_weekly": 4 }
+    },
+    {
+      "title": "Gece Yarısı Treni",
+      "author": "Matt Haig",
+      "isbn": "9786051984445",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/gece-yarisi-treni/755780.html",
+      "source_ranks": { "kitapyurdu_weekly": 5 }
+    },
+    {
+      "title": "Algernon'a Çiçekler",
+      "author": "Daniel Keyes",
+      "isbn": "9786054629862",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/algernona-cicekler/363597.html",
+      "source_ranks": { "kitapyurdu_weekly": 6 }
+    },
+    {
+      "title": "17 Haziran",
+      "author": "Alex Schulman",
+      "isbn": "9786050849981",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/17-haziran/751490.html",
+      "source_ranks": { "kitapyurdu_weekly": 7 }
+    },
+    {
+      "title": "Pediatrik Acil Servis Order-Reçete El Kitabı (2026)",
+      "author": "Uzm. Dr. Muhammed Emrullah Yıldırım",
+      "isbn": "9786253638634",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/pediatrik-acil-servis-orderrecete-el-kitabi-2026/762603.html",
+      "source_ranks": { "kitapyurdu_weekly": 8 }
+    },
+    {
+      "title": "Bülbül",
+      "author": "Kristin Hannah",
+      "isbn": "9786053438373",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/bulbul/415737.html",
+      "source_ranks": { "kitapyurdu_weekly": 9 }
+    },
+    {
+      "title": "Saç Örgüsü",
+      "author": "Laetitia Colombani",
+      "isbn": "9786058276666",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/sac-orgusu/541590.html",
+      "source_ranks": { "kitapyurdu_weekly": 10 }
+    },
+    {
+      "title": "Gece Yarısı Kütüphanesi",
+      "author": "Matt Haig",
+      "isbn": "9786051981833",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/gece-yarisi-kutuphanesi/582550.html",
+      "source_ranks": { "kitapyurdu_weekly": 11, "amazon_tr_2025": 4 }
+    },
+    {
+      "title": "Bahçıvan ve Ölüm",
+      "author": "Georgi Gospodinov",
+      "isbn": "9786053164258",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/bahcivan-ve-olum/728967.html",
+      "source_ranks": { "kitapyurdu_weekly": 12 }
+    },
+    {
+      "title": "Babası Kılıklı",
+      "author": "Mert Arık",
+      "isbn": "9786258618303",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/babasi-kilikli/763159.html",
+      "source_ranks": { "kitapyurdu_weekly": 13 }
+    },
+    {
+      "title": "Yaşamak",
+      "author": "Yu Hua",
+      "isbn": "9786056587887",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/yasamak/393974.html",
+      "source_ranks": { "kitapyurdu_weekly": 14, "amazon_tr_2025": 7 }
+    },
+    {
+      "title": "İşin Aslı, Judit ve Sonrası",
+      "author": "Sándor Márai",
+      "isbn": "9789750846304",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/isin-asli-judit-ve-sonrasi/523757.html",
+      "source_ranks": { "kitapyurdu_weekly": 15 }
+    },
+    {
+      "title": "Atomik Alışkanlıklar",
+      "author": "James Clear",
+      "isbn": "9786052998380",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/atomik-aliskanliklar/540793.html",
+      "source_ranks": { "kitapyurdu_weekly": 16, "amazon_tr_2025": 9 }
+    },
+    {
+      "title": "Altı Harfli Bir Tatlı",
+      "author": "Şermin Yaşar",
+      "isbn": "9786255683342",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/alti-harfli-bir-tatli/732461.html",
+      "source_ranks": { "kitapyurdu_weekly": 17 }
+    },
+    {
+      "title": "Büyüdüm Ben!",
+      "author": "Şermin Yaşar",
+      "isbn": "9786259316550",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/buyudum-ben/752667.html",
+      "source_ranks": { "kitapyurdu_weekly": 18 }
+    },
+    {
+      "title": "Hizmetçi",
+      "author": "Freida McFadden",
+      "isbn": "9786256411302",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/hizmetci/646734.html",
+      "source_ranks": { "kitapyurdu_weekly": 19 }
+    },
+    {
+      "title": "Hamnet",
+      "author": "Maggie O'Farrell",
+      "isbn": "9786051982304",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/hamnet/617126.html",
+      "source_ranks": { "kitapyurdu_weekly": 20 }
+    },
+    {
+      "title": "Sarı Yüz",
+      "author": "R. F. Kuang",
+      "isbn": "9786052655634",
+      "isbn_source_url": "https://www.amazon.com.tr/Sar%C4%B1-Y%C3%BCz-R-F-Kuang/dp/6052655631",
+      "source_ranks": { "amazon_tr_2025": 1 }
+    },
+    {
+      "title": "Kendime Düşünceler",
+      "author": "Marcus Aurelius",
+      "isbn": "9786052954027",
+      "isbn_source_url": "https://katalogkktc.asbu.edu.tr/cgi-bin/koha/opac-detail.pl?biblionumber=8222",
+      "source_ranks": { "amazon_tr_2025": 2 }
+    },
+    {
+      "title": "Bekle Beni",
+      "author": "Zülfü Livaneli",
+      "isbn": "9789750766091",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/bekle-beni/730638.html",
+      "source_ranks": { "amazon_tr_2025": 3 }
+    },
+    {
+      "title": "Cumhuriyet'in İlk Sabahı",
+      "author": "İlber Ortaylı, Şermin Yaşar",
+      "isbn": "9786256989498",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/cumhuriyetin-ilk-sabahi/649012.html",
+      "source_ranks": { "amazon_tr_2025": 5 }
+    },
+    {
+      "title": "Martin Eden",
+      "author": "Jack London",
+      "isbn": "9786254052859",
+      "isbn_source_url": "https://www.iskultur.com.tr/martin-eden-sert-kapak.aspx",
+      "source_ranks": { "amazon_tr_2025": 6 }
+    },
+    {
+      "title": "Ölmek İstiyorum Ama Tteokbokki de Yemek İstiyorum",
+      "author": "Baek Se-hee",
+      "isbn": "9786259520223",
+      "isbn_source_url": "https://www.ithakiyayingrubu.com/olmek-istiyorum-ama-tteokbokki-de-yemek-istiyorum",
+      "source_ranks": { "amazon_tr_2025": 8 }
+    },
+    {
+      "title": "İnsanlığımı Yitirirken",
+      "author": "Osamu Dazai",
+      "isbn": "9786258401479",
+      "isbn_source_url": "https://www.ithakiyayingrubu.com/insanligimi-yitirirken",
+      "source_ranks": { "amazon_tr_2025": 10 }
+    },
+    {
+      "title": "Kürk Mantolu Madonna",
+      "author": "Sabahattin Ali",
+      "isbn": "9789753638029",
+      "isbn_source_url": "https://1000kitap.com/kitap/kurk-mantolu-madonna--557",
+      "source_ranks": { "1000kitap_most_read": 1 }
+    },
+    {
+      "title": "Hayvan Çiftliği",
+      "author": "George Orwell",
+      "isbn": "9789750719387",
+      "isbn_source_url": "https://1000kitap.com/kitap/hayvan-ciftligi--147",
+      "source_ranks": { "1000kitap_most_read": 2 }
+    },
+    {
+      "title": "Satranç",
+      "author": "Stefan Zweig",
+      "isbn": "9786254293894",
+      "isbn_source_url": "https://www.kitapyurdu.com/kitap/satranc/651658.html",
+      "source_ranks": { "1000kitap_most_read": 3 }
+    },
+    {
+      "title": "Küçük Prens",
+      "author": "Antoine de Saint-Exupéry",
+      "isbn": "9786254050657",
+      "isbn_source_url": "https://www.iskultur.com.tr/dosyalar/2022/04/00_kucuk_prens_ii.pdf",
+      "source_ranks": { "1000kitap_most_read": 4 }
+    },
+    {
+      "title": "Şeker Portakalı",
+      "author": "José Mauro de Vasconcelos",
+      "isbn": "9789750761805",
+      "isbn_source_url": "https://www.canyayinlari.com/Uploads/Docs/121347/9789750761805.pdf",
+      "source_ranks": { "1000kitap_most_read": 5 }
+    },
+    {
+      "title": "Dönüşüm",
+      "author": "Franz Kafka",
+      "isbn": "9786053609322",
+      "isbn_source_url": "https://1000kitap.com/kitap/donusum--1310",
+      "source_ranks": { "1000kitap_most_read": 6 }
+    },
+    {
+      "title": "Bilinmeyen Bir Kadının Mektubu",
+      "author": "Stefan Zweig",
+      "isbn": "9786053606604",
+      "isbn_source_url": "https://1000kitap.com/kitap/bilinmeyen-bir-kadinin-mektubu--6159",
+      "source_ranks": { "1000kitap_most_read": 7 }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../../data/auth_repository.dart';
 
@@ -119,12 +120,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   bool _isGoogleCancellation(Object error) =>
-      error is FirebaseAuthException &&
-      error.code == 'google-sign-in-cancelled';
+      (error is FirebaseAuthException &&
+          error.code == 'google-sign-in-cancelled') ||
+      (error is GoogleSignInException &&
+          error.code == GoogleSignInExceptionCode.canceled);
 
   String _messageFor(Object error) {
     if (error is FirebaseAuthException && error.message != null) {
       return error.message!;
+    }
+    if (error is GoogleSignInException) {
+      return error.description ?? 'Google sign-in failed. Please try again.';
     }
     return error.toString().replaceFirst('Exception: ', '');
   }

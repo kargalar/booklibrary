@@ -2,6 +2,7 @@ import 'package:booklibrary/data/auth_repository.dart';
 import 'package:booklibrary/features/auth/presentation/auth_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 void main() {
   test('successful sign-in emits loading and idle states', () async {
@@ -52,6 +53,43 @@ void main() {
 
     expect(states.last.status, AuthStatus.idle);
     expect(states.last.errorMessage, isNull);
+    await bloc.close();
+  });
+
+  test('native Google cancellation does not show an error', () async {
+    final bloc = AuthBloc(
+      repository: _FakeAuthGateway(
+        error: const GoogleSignInException(
+          code: GoogleSignInExceptionCode.canceled,
+        ),
+      ),
+    );
+
+    final statesFuture = bloc.stream.take(2).toList();
+    bloc.add(const AuthGoogleSignInRequested());
+    final states = await statesFuture;
+
+    expect(states.last.status, AuthStatus.idle);
+    expect(states.last.errorMessage, isNull);
+    await bloc.close();
+  });
+
+  test('native Google configuration errors show their description', () async {
+    final bloc = AuthBloc(
+      repository: _FakeAuthGateway(
+        error: const GoogleSignInException(
+          code: GoogleSignInExceptionCode.clientConfigurationError,
+          description: 'Invalid server client ID.',
+        ),
+      ),
+    );
+
+    final statesFuture = bloc.stream.take(2).toList();
+    bloc.add(const AuthGoogleSignInRequested());
+    final states = await statesFuture;
+
+    expect(states.last.status, AuthStatus.failure);
+    expect(states.last.errorMessage, 'Invalid server client ID.');
     await bloc.close();
   });
 }

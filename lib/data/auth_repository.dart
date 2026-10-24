@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart' as native_google;
 import 'package:google_sign_in_all_platforms/google_sign_in_all_platforms.dart';
 
 const googleDesktopClientId = String.fromEnvironment('GOOGLE_OAUTH_CLIENT_ID');
@@ -22,19 +23,26 @@ abstract interface class AuthGateway {
 }
 
 class AuthRepository implements AuthGateway {
-  AuthRepository({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
+  AuthRepository({
+    FirebaseAuth? auth,
+    native_google.GoogleSignIn? mobileGoogleSignIn,
+  }) : _auth = auth ?? FirebaseAuth.instance,
+       _mobileGoogleSignIn =
+           mobileGoogleSignIn ?? native_google.GoogleSignIn.instance;
+
   final FirebaseAuth _auth;
+  final native_google.GoogleSignIn _mobileGoogleSignIn;
+  Future<void>? _mobileInitialization;
   static GoogleSignIn? _googleSignIn;
 
-  static GoogleSignIn get _nativeGoogleSignIn => _googleSignIn ??= GoogleSignIn(
-    params: const GoogleSignInParams(
-      clientId: googleDesktopClientId,
-      clientSecret: googleDesktopClientSecret,
-      scopes: ['openid', 'profile', 'email'],
-    ),
-  );
-
-  static bool get _usesNativeGoogleSignIn => !kIsWeb;
+  static GoogleSignIn get _desktopGoogleSignIn =>
+      _googleSignIn ??= GoogleSignIn(
+        params: const GoogleSignInParams(
+          clientId: googleDesktopClientId,
+          clientSecret: googleDesktopClientSecret,
+          scopes: ['openid', 'profile', 'email'],
+        ),
+      );
 
   @override
   Stream<User?> get authState => _auth.authStateChanges();
@@ -50,12 +58,13 @@ class AuthRepository implements AuthGateway {
   @override
   Future<void> signOut() async {
     await _auth.signOut();
+    if (_mobileInitialization != null) await _mobileGoogleSignIn.signOut();
     if (_googleSignIn != null) await _googleSignIn!.signOut();
   }
 
   @override
   Future<void> signInWithGoogle() async {
-    if (!_usesNativeGoogleSignIn) {
+    if (kIsWeb) {
       await _auth.signInWithProvider(GoogleAuthProvider());
       return;
     }
@@ -63,16 +72,18 @@ class AuthRepository implements AuthGateway {
     final isDesktop =
         defaultTargetPlatform == TargetPlatform.windows ||
         defaultTargetPlatform == TargetPlatform.linux;
-    if (isDesktop &&
-        (googleDesktopClientId.isEmpty || googleDesktopClientSecret.isEmpty)) {
+    if (!isDesktop) {
+      await _signInWithGoogleMobile();
+      return;
+    }
+    if (googleDesktopClientId.isEmpty || googleDesktopClientSecret.isEmpty) {
       throw FirebaseAuthException(
         code: 'google-desktop-config-missing',
         message: 'Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET to enable Google sign-in on Windows.',
       );
     }
 
-    // Desktop opens the browser OAuth flow; mobile uses the native account picker.
-    final credentials = await _nativeGoogleSignIn.signInOnline();
+    final credentials = await _desktopGoogleSignIn.signInOnline();
     if (credentials == null) {
       throw FirebaseAuthException(
         code: 'google-sign-in-cancelled',
@@ -83,7 +94,7 @@ class AuthRepository implements AuthGateway {
     if (idToken == null || idToken.isEmpty) {
       throw FirebaseAuthException(
         code: 'google-id-token-missing',
-        message: 'Google authentication failed. Check the Android OAuth configuration.',
+        message: 'Google authentication did not return an ID token. Check the desktop OAuth configuration.',
       );
     }
     final credential = GoogleAuthProvider.credential(
@@ -91,5 +102,22 @@ class AuthRepository implements AuthGateway {
       idToken: idToken,
     );
     await _auth.signInWithCredential(credential);
+  }
+
+  Future<void> _signInWithGoogleMobile() async {
+    // Android reads its web client ID from google-services.json. Desktop OAuth
+    // credentials must not override that platform configuration.
+    await (_mobileInitialization ??= _mobileGoogleSignIn.initialize());
+    final account = await _mobileGoogleSignIn.authenticate();
+    final idToken = account.authentication.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'google-id-token-missing',
+        message: 'Google authentication did not return an ID token. Check the mobile OAuth configuration.',
+      );
+    }
+    await _auth.signInWithCredential(
+      GoogleAuthProvider.credential(idToken: idToken),
+    );
   }
 }

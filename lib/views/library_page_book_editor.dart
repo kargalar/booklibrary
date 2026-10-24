@@ -152,7 +152,6 @@ extension _LibraryPageStatePart2 on _LibraryPageState {
     BookMetadataLookupResult? lookupResult;
     var lookupBusy = false;
     String? lookupError;
-    var lookupStarted = false;
     var sheetOpen = true;
     File? pendingFile;
     File? pendingAudio;
@@ -420,7 +419,7 @@ extension _LibraryPageStatePart2 on _LibraryPageState {
           title: title.text,
           author: author.text,
         );
-        if (!mounted) return;
+        if (!mounted || !sheetOpen) return;
         final selection = await _showMetadataComparison(context, result);
         if (selection == null || !sheetOpen || metadata == null) return;
         final selected = <BookMetadataField, BookMetadata>{
@@ -472,7 +471,9 @@ extension _LibraryPageStatePart2 on _LibraryPageState {
     }
 
     Future<void> save(StateSetter update) async {
-      if (saveBusy || !form.currentState!.validate()) return;
+      if (!sheetOpen || saveBusy || !(form.currentState?.validate() ?? false)) {
+        return;
+      }
       final titleValue = title.text.trim();
       final authorValue = author.text.trim();
       final normalizedIsbn = normalizeIsbn(isbn.text);
@@ -689,7 +690,6 @@ extension _LibraryPageStatePart2 on _LibraryPageState {
 
     void syncFormData() {
       formData
-        ..lookupStarted = lookupStarted
         ..lookupBusy = lookupBusy
         ..lookupError = lookupError
         ..lookupResult = lookupResult
@@ -701,6 +701,14 @@ extension _LibraryPageStatePart2 on _LibraryPageState {
         ..pendingAudio = pendingAudio
         ..saveBusy = saveBusy;
     }
+
+    StateSetter synchronizedUpdate(StateSetter update) => (change) {
+      if (!mounted || !sheetOpen) return;
+      update(() {
+        change();
+        syncFormData();
+      });
+    };
 
     formData = _BookSheetFormData(
       context: context,
@@ -745,7 +753,7 @@ extension _LibraryPageStatePart2 on _LibraryPageState {
       lookupResult: lookupResult,
       lookupBusy: lookupBusy,
       lookupError: lookupError,
-      lookupStarted: lookupStarted,
+      lookupStarted: false,
       visibleMatches: visibleMatches,
       pendingFile: pendingFile,
       pendingAudio: pendingAudio,
@@ -767,50 +775,21 @@ extension _LibraryPageStatePart2 on _LibraryPageState {
             hintText: hintText,
             validator: validator,
           ),
-      lookup: (update) async {
-        await lookup(update);
-        syncFormData();
-      },
-      lookupByTitleAuthor: (update) async {
-        await lookupByTitleAuthor(update);
-        syncFormData();
-      },
-      refreshMatchWarning: (update) {
-        refreshMatchWarning(update);
-        syncFormData();
-      },
-      compare: (update) async {
-        await compare(update);
-        syncFormData();
-      },
-      save: (update) async {
-        await save(update);
-        syncFormData();
-      },
-      pickBookFile: (update) async {
-        await pickBookFile(update);
-        syncFormData();
-      },
-      pickAudioFile: (update) async {
-        await pickAudioFile(update);
-        syncFormData();
-      },
-      captureCover: (update) async {
-        await captureCover(update);
-        syncFormData();
-      },
-      removeCover: (update) {
-        removeCover(update);
-        syncFormData();
-      },
-      pickGalleryCover: (update) async {
-        await pickGalleryCover(update);
-        syncFormData();
-      },
-      onIsbnChanged: (value, update) {
-        onIsbnChanged(value, update);
-        syncFormData();
-      },
+      lookup: (update) => lookup(synchronizedUpdate(update)),
+      lookupByTitleAuthor: (update) =>
+          lookupByTitleAuthor(synchronizedUpdate(update)),
+      refreshMatchWarning: (update) =>
+          refreshMatchWarning(synchronizedUpdate(update)),
+      compare: (update) => compare(synchronizedUpdate(update)),
+      save: (update) => save(synchronizedUpdate(update)),
+      pickBookFile: (update) => pickBookFile(synchronizedUpdate(update)),
+      pickAudioFile: (update) => pickAudioFile(synchronizedUpdate(update)),
+      captureCover: (update) => captureCover(synchronizedUpdate(update)),
+      removeCover: (update) => removeCover(synchronizedUpdate(update)),
+      pickGalleryCover: (update) =>
+          pickGalleryCover(synchronizedUpdate(update)),
+      onIsbnChanged: (value, update) =>
+          onIsbnChanged(value, synchronizedUpdate(update)),
       titleOptions: _titleOptions,
       authorOptions: _authorOptions,
       publisherOptions: _publisherOptions,
@@ -818,9 +797,13 @@ extension _LibraryPageStatePart2 on _LibraryPageState {
       languageOptions: _languageOptions,
       textValue: textValue,
     );
-    await _showBookSheetForm(formData);
-    sheetOpen = false;
-    isbnLookupDebounce?.cancel();
+    await _showBookSheetForm(
+      formData,
+      onClosing: () {
+        sheetOpen = false;
+        isbnLookupDebounce?.cancel();
+      },
+    );
     _releaseSearchFocus();
     if (doc != null) {
       _bookFiles.remove(doc.id);

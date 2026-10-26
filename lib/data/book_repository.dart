@@ -1,7 +1,8 @@
 import 'dart:developer' as developer;
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'local_database.dart';
+
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -27,8 +28,8 @@ class CatalogBook {
 }
 
 class BookRepository {
-  BookRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  BookRepository({LocalDatabase? database})
+    : _database = database ?? LocalDatabase.instance;
 
   static const _canonicalBatchSize = 30;
 
@@ -70,13 +71,13 @@ class BookRepository {
     'isbnSearches',
   };
 
-  final FirebaseFirestore _firestore;
+  final LocalDatabase _database;
 
   CollectionReference<Map<String, dynamic>> get _books =>
-      _firestore.collection('books');
+      _database.collection('books');
 
   CollectionReference<Map<String, dynamic>> get _libraryBooks =>
-      _firestore.collection('libraryBooks');
+      _database.collection('libraryBooks');
 
   String newLibraryBookId() => _libraryBooks.doc().id;
 
@@ -162,7 +163,7 @@ class BookRepository {
         ? _libraryBooks.doc()
         : _libraryBooks.doc(relationId);
 
-    await _firestore.runTransaction((transaction) async {
+    await _database.runTransaction((transaction) async {
       final relationSnapshot = await transaction.get(relation);
       final canonicalSnapshot = await transaction.get(canonical);
       final current = canonicalSnapshot.data() ?? const <String, dynamic>{};
@@ -245,7 +246,7 @@ class BookRepository {
       target[entry.key] = entry.value;
     }
 
-    final batch = _firestore.batch();
+    final batch = _database.batch();
     if (canonical.isNotEmpty) {
       final canonicalReference = _books.doc(bookId);
       final canonicalSnapshot = await canonicalReference.get();
@@ -316,7 +317,7 @@ class BookRepository {
     }
 
     final canonical = _books.doc(canonicalId);
-    await _firestore.runTransaction((transaction) async {
+    await _database.runTransaction((transaction) async {
       final currentSource = await transaction.get(source);
       final currentBook = await transaction.get(canonical);
       final currentTargets = <String, DocumentSnapshot<Map<String, dynamic>>>{};
@@ -406,7 +407,7 @@ class BookRepository {
     }
 
     final canonical = _books.doc(canonicalId);
-    await _firestore.runTransaction((transaction) async {
+    await _database.runTransaction((transaction) async {
       final currentRelation = await transaction.get(relation);
       final currentBook = await transaction.get(canonical);
       if (!currentRelation.exists) return;

@@ -15,14 +15,7 @@ class BookMetadataLookup {
   final String? _googleBooksKey;
   final Future<Map<String, dynamic>?> Function(String isbn)? hardcoverLookup;
 
-  bool get _hasHardcoverAccess {
-    if (hardcoverLookup != null) return true;
-    try {
-      return FirebaseAuth.instance.currentUser != null;
-    } on Exception {
-      return false;
-    }
-  }
+  bool get _hasHardcoverAccess => hardcoverLookup != null;
 
   // Fallback lookup: providers are deliberately queried one at a time.
   Future<BookMetadataLookupResult> find(
@@ -80,7 +73,7 @@ class BookMetadataLookup {
       }
       if (provider == BookMetadataProvider.hardcover && !_hasHardcoverAccess) {
         if (compareAll) {
-          errors[provider] = 'Unavailable because you are not signed in.';
+          errors[provider] = 'An optional metadata provider is not configured.';
         }
         continue;
       }
@@ -148,34 +141,8 @@ class BookMetadataLookup {
   }
 
   Future<BookMetadata?> _fetchHardcover(String isbn) async {
-    final lookup = hardcoverLookup;
-    final edition = lookup != null
-        ? await lookup(isbn)
-        : await _fetchHardcoverThroughFirebase(isbn);
+    final edition = await hardcoverLookup?.call(isbn);
     return edition == null ? null : BookMetadata.fromHardcover(isbn, edition);
-  }
-
-  Future<Map<String, dynamic>?> _fetchHardcoverThroughFirebase(
-    String isbn,
-  ) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      throw const FormatException('Sign in to use Hardcover.');
-    }
-    final idToken = await user.getIdToken();
-    if (idToken == null || idToken.isEmpty) {
-      throw const FormatException(
-        'Firebase authentication could not be completed.',
-      );
-    }
-    return _postJson(
-      Uri.https(
-        'europe-west1-${DefaultFirebaseOptions.currentPlatform.projectId}.cloudfunctions.net',
-        'lookupHardcover',
-      ),
-      {'isbn': isbn},
-      headers: {'Authorization': 'Bearer $idToken'},
-    );
   }
 
   Future<BookMetadata?> _fetchOpenLibraryIsbn(String isbn) async {
@@ -332,32 +299,6 @@ class BookMetadataLookup {
       );
     }
     return response;
-  }
-
-  Future<Map<String, dynamic>?> _postJson(
-    Uri uri,
-    Map<String, dynamic> body, {
-    Map<String, String> headers = const {},
-  }) async {
-    final response = await _client
-        .post(
-          uri,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': 'BookLibrary/1.0',
-            ...headers,
-          },
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 12));
-    if (response.statusCode == 404) return null;
-    if (response.statusCode != 200) {
-      throw FormatException(
-        'The provider returned no response (${response.statusCode}).',
-      );
-    }
-    return _jsonObject(response.body);
   }
 
   void dispose() => _client.close();

@@ -595,7 +595,7 @@ extension _LibraryPageStatePart6 on _LibraryPageState {
   }
 
   String get _userInitial {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = LocalIdentity.instance.currentUser;
     final value = user?.displayName?.trim().isNotEmpty == true
         ? user!.displayName!
         : user?.email ?? 'O';

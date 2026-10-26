@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,15 +22,7 @@ class AudioBookFiles {
       await preferences.remove('$uid.$id.audio.$name.position');
       await preferences.remove('$uid.$id.audio.$name.speed');
     }
-    try {
-      await _remote(uid, id).delete();
-    } on FirebaseException catch (error) {
-      if (error.code != 'object-not-found') rethrow;
-    }
   }
-
-  static Reference _remote(String uid, String id) =>
-      FirebaseStorage.instance.ref('books/$uid/$id/audio');
 
   static Future<Directory> _directory(String uid, String id) async => Directory(
     p.join(
@@ -45,7 +37,14 @@ class AudioBookFiles {
   static Future<File?> find(String uid, String id) async {
     final prefs = await SharedPreferences.getInstance();
     final name = prefs.getString('$uid.$id.audio.file');
-    if (name == null || p.basename(name) != name) return null;
+    if (name == null) {
+      final root = await getApplicationDocumentsDirectory();
+      final archived = File(
+        p.join(root.path, 'cloud_archive', 'books', uid, id, 'audio'),
+      );
+      return await archived.exists() ? archived : null;
+    }
+    if (p.basename(name) != name) return null;
     final file = File(p.join((await _directory(uid, id)).path, name));
     return await file.exists() ? file : null;
   }
@@ -89,68 +88,7 @@ class AudioBookFiles {
     required String extension,
     void Function(double progress)? onProgress,
   }) async {
-    final format = extension.toLowerCase().replaceFirst('.', '');
-    if (!extensions.contains(format)) return null;
-    final directory = await _directory(localUid, id);
-    await directory.create(recursive: true);
-    final target = File(p.join(directory.path, '$id.$format'));
-    try {
-      final task = _remote(ownerId, id).writeToFile(target);
-      await for (final snapshot in task.snapshotEvents) {
-        if (snapshot.totalBytes > 0) {
-          onProgress?.call(
-            (snapshot.bytesTransferred / snapshot.totalBytes)
-                .clamp(0, 1)
-                .toDouble(),
-          );
-        }
-      }
-      onProgress?.call(1);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
-        '$localUid.$id.audio.file',
-        p.basename(target.path),
-      );
-      return target;
-    } on FirebaseException catch (error) {
-      if (await target.exists()) await target.delete();
-      if (error.code == 'object-not-found') return null;
-      rethrow;
-    } catch (_) {
-      if (await target.exists()) await target.delete();
-      rethrow;
-    }
-  }
-
-  static Future<void> upload(
-    String uid,
-    String id,
-    File file, {
-    void Function(double progress)? onProgress,
-  }) async {
-    final extension = p
-        .extension(file.path)
-        .toLowerCase()
-        .replaceFirst('.', '');
-    if (!extensions.contains(extension)) {
-      throw const FormatException(
-        'Only supported audio files can be uploaded.',
-      );
-    }
-    final task = _remote(
-      uid,
-      id,
-    ).putFile(file, SettableMetadata(contentType: _contentType(extension)));
-    await for (final snapshot in task.snapshotEvents) {
-      if (snapshot.totalBytes > 0) {
-        onProgress?.call(
-          (snapshot.bytesTransferred / snapshot.totalBytes)
-              .clamp(0, 1)
-              .toDouble(),
-        );
-      }
-    }
-    onProgress?.call(1);
+    return await find(localUid, id) ?? await find(ownerId, id);
   }
 
   static Future<File> save(
@@ -160,7 +98,7 @@ class AudioBookFiles {
     void Function(double progress)? onProgress,
   }) async {
     final target = await saveLocal(uid, id, source);
-    await upload(uid, id, target, onProgress: onProgress);
+    onProgress?.call(1);
     return target;
   }
 
@@ -197,13 +135,4 @@ class AudioBookFiles {
     }
     return target;
   }
-
-  static String _contentType(String extension) => switch (extension) {
-    'mp3' => 'audio/mpeg',
-    'm4a' || 'm4b' => 'audio/mp4',
-    'wav' => 'audio/wav',
-    'ogg' => 'audio/ogg',
-    'flac' => 'audio/flac',
-    _ => 'application/octet-stream',
-  };
 }

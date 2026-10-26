@@ -4,8 +4,10 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
+import '../data/local_database.dart';
+import '../data/local_identity.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,8 +28,10 @@ import '../data/borrower_repository.dart';
 import '../data/library_stats.dart';
 import '../data/library_book_snapshot.dart';
 import '../data/local_book_store.dart';
+import '../data/local_images.dart';
 import '../data/social_repository.dart';
 import '../app/providers.dart';
+import '../app/local_strings.dart';
 import '../viewmodels/library_view_model.dart';
 import 'book_notes_page.dart';
 import 'book_items_field.dart';
@@ -223,7 +227,7 @@ class _LibraryPageState extends _LibraryPageStateBase {
     super.initState();
     vm = ref.read(libraryViewModelProvider);
     social = ref.read(socialRepositoryProvider);
-    uid = FirebaseAuth.instance.currentUser!.uid;
+    uid = LocalIdentity.instance.currentUser!.uid;
     _localBookStore = LocalBookStore(uid);
     homeStream = vm.books(uid);
     libraryStream = vm.books(uid);

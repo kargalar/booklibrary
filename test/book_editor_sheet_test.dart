@@ -10,13 +10,8 @@ import 'package:booklibrary/data/library_stats.dart';
 import 'package:booklibrary/data/social_repository.dart';
 import 'package:booklibrary/viewmodels/library_view_model.dart';
 import 'package:booklibrary/views/library_page.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
-// Platform interfaces allow the real page to run without native Firebase.
-// ignore: depend_on_referenced_packages
-import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
-// ignore: depend_on_referenced_packages
-import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
+import 'package:booklibrary/data/local_database.dart';
+import 'package:booklibrary/data/local_identity.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,8 +30,7 @@ void main() {
   late _BookRepository repository;
 
   setUpAll(() {
-    FirebasePlatform.instance = _FirebasePlatform();
-    FirebaseAuthPlatform.instance = _AuthPlatform();
+    LocalIdentity.instance.currentUser = const LocalUser(uid: _userId);
   });
 
   setUp(() async {
@@ -253,52 +247,4 @@ class _SocialRepository extends Fake implements SocialRepository {
 class _Snapshot extends Fake implements QuerySnapshot<Map<String, dynamic>> {
   @override
   List<QueryDocumentSnapshot<Map<String, dynamic>>> get docs => const [];
-}
-
-class _FirebasePlatform extends FirebasePlatform {
-  @override
-  FirebaseAppPlatform app([String name = defaultFirebaseAppName]) =>
-      FirebaseAppPlatform(
-        name,
-        const FirebaseOptions(
-          apiKey: 'test',
-          appId: 'test',
-          messagingSenderId: 'test',
-          projectId: 'test',
-        ),
-      );
-}
-
-class _AuthPlatform extends FirebaseAuthPlatform {
-  @override
-  FirebaseAuthPlatform delegateFor({required FirebaseApp app}) => this;
-
-  @override
-  FirebaseAuthPlatform setInitialValues({
-    InternalUserDetails? currentUser,
-    String? languageCode,
-  }) => this;
-
-  @override
-  UserPlatform get currentUser => _UserPlatform(this);
-}
-
-class _UserPlatform extends UserPlatform {
-  _UserPlatform(FirebaseAuthPlatform auth)
-    : super(
-        auth,
-        _MultiFactorPlatform(auth),
-        InternalUserDetails(
-          userInfo: InternalUserInfo(
-            uid: _userId,
-            isAnonymous: false,
-            isEmailVerified: true,
-          ),
-          providerData: [],
-        ),
-      );
-}
-
-class _MultiFactorPlatform extends MultiFactorPlatform {
-  _MultiFactorPlatform(super.auth);
 }

@@ -11,7 +11,7 @@ extension _LibraryPageStatePart1 on _LibraryPageState {
         _localBookChanges[change.id] = change;
       }
     });
-    for (final change in changes.where((change) => change.error == null)) {
+    for (final change in changes) {
       unawaited(_syncLocalBook(change));
     }
   }
@@ -289,14 +289,11 @@ extension _LibraryPageStatePart1 on _LibraryPageState {
     try {
       final data = current.data;
       final coverPath = data['coverPath'] as String?;
-      final coverStorageUrl = data['coverStorageUrl'] as String?;
       final localCover =
           coverPath != null &&
           !coverPath.startsWith('http') &&
           await File(coverPath).exists();
-      final needsCoverUpload =
-          coverStorageUrl?.startsWith('http') != true &&
-          (localCover || (data['coverUrl'] as String?)?.isNotEmpty == true);
+      final needsCoverUpload = localCover;
       final readingFormat = _storedFormat(data['readingFormat']);
       final audioFormat = _storedFormat(data['audioFormat']);
 
@@ -326,7 +323,8 @@ extension _LibraryPageStatePart1 on _LibraryPageState {
             'spotifyUrl': null,
           });
         }
-      } else {
+      }
+      {
         final updates = Map<String, dynamic>.from(data)
           ..remove('ownerId')
           ..remove('libraryId')
@@ -357,19 +355,16 @@ extension _LibraryPageStatePart1 on _LibraryPageState {
           extension: readingFormat,
         );
         if (file != null) {
-          await BookFiles.upload(uid, current.id, file);
           uploaded['readingFormat'] = readingFormat;
         }
       }
       if (audioFormat != null) {
         final file = await AudioBookFiles.find(uid, current.id);
         if (file != null) {
-          await AudioBookFiles.upload(uid, current.id, file);
           uploaded['audioFormat'] = audioFormat;
         }
       }
       if (uploaded.isNotEmpty) {
-        if (audioFormat != null) uploaded['listeningProgress'] = 0.0;
         await vm.update(current.id, uploaded);
       }
       if (!identical(_localBookChanges[current.id], current)) return false;
@@ -382,7 +377,7 @@ extension _LibraryPageStatePart1 on _LibraryPageState {
       return true;
     } catch (error, stackTrace) {
       developer.log(
-        'Local book cloud sync failed',
+        'Local book commit failed',
         name: 'LibraryPage.localBookSync',
         error: error,
         stackTrace: stackTrace,
@@ -395,11 +390,7 @@ extension _LibraryPageStatePart1 on _LibraryPageState {
           setState(() {});
           if (showWarning) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'The book was recorded on this device; Could not upload to cloud. You can try again from the details.',
-                ),
-              ),
+              const SnackBar(content: Text(LocalStrings.saveFailed)),
             );
           }
         }
@@ -418,7 +409,7 @@ extension _LibraryPageStatePart1 on _LibraryPageState {
     if (change == null) return;
     if (!await _syncLocalBook(change, showWarning: false) &&
         _localBookChanges.containsKey(id)) {
-      throw StateError('Upload to cloud failed.');
+      throw StateError(LocalStrings.saveFailed);
     }
   }
 
@@ -429,7 +420,7 @@ extension _LibraryPageStatePart1 on _LibraryPageState {
   }
 
   String _localSyncError(Object error) =>
-      error is FormatException ? error.message : 'Upload to cloud failed.';
+      error is FormatException ? error.message : LocalStrings.saveFailed;
 
   Future<void> addBook() async {
     _releaseSearchFocus();

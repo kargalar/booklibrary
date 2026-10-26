@@ -1,15 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 
 class CoverFiles {
   static const maxBytes = 10 * 1024 * 1024;
-  static const _bucketCacheControl = 'public,max-age=31536000';
-
-  static Reference _remote(String uid, String id) =>
-      FirebaseStorage.instance.ref('covers/$uid/$id.jpg');
 
   static Future<String> saveFromUrl(
     String uid,
@@ -74,34 +71,20 @@ class CoverFiles {
         'The cover image is empty or exceeds the 10 MB limit.',
       );
     }
-    final reference = _remote(uid, id);
-    try {
-      await reference.putData(
-        bytes,
-        SettableMetadata(
-          contentType: contentType,
-          cacheControl: _bucketCacheControl,
-          customMetadata: {
-            ...?sourceUrl == null ? null : {'sourceCoverUrl': sourceUrl},
-          },
-        ),
-      );
-      return await reference.getDownloadURL();
-    } catch (_) {
-      try {
-        await reference.delete();
-      } on FirebaseException catch (error) {
-        if (error.code != 'object-not-found') rethrow;
-      }
-      rethrow;
-    }
+    final root = await getApplicationDocumentsDirectory();
+    final target = File(
+      p.join(
+        root.path,
+        'covers',
+        '${uid}_${id}_${DateTime.now().microsecondsSinceEpoch}.jpg',
+      ),
+    );
+    await target.parent.create(recursive: true);
+    await target.writeAsBytes(bytes, flush: true);
+    return target.path;
   }
 
-  static Future<void> delete(String uid, String id) async {
-    try {
-      await _remote(uid, id).delete();
-    } on FirebaseException catch (error) {
-      if (error.code != 'object-not-found') rethrow;
-    }
-  }
+  // Existing cover files may be referenced by another imported record.
+  // They are retained until an explicit archive cleanup is requested.
+  static Future<void> delete(String uid, String id) async {}
 }

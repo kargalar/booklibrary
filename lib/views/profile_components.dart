@@ -115,7 +115,7 @@ class SettingsPage extends ConsumerWidget {
         ),
         if (isDatabaseAdmin(
           platform: defaultTargetPlatform,
-          email: FirebaseAuth.instance.currentUser?.email,
+          email: LocalIdentity.instance.currentUser?.email,
         )) ...[
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -129,10 +129,10 @@ class SettingsPage extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => ref.read(authRepositoryProvider).signOut(),
-          icon: const Icon(Icons.logout_rounded),
-          label: const Text('Log out'),
+        const ListTile(
+          leading: Icon(Icons.phone_android_rounded),
+          title: Text(LocalStrings.storageTitle),
+          subtitle: Text(LocalStrings.storageDescription),
         ),
       ],
     ),

@@ -16,15 +16,23 @@ class _BookCoverState extends State<_BookCover> {
   }
 
   void _updateCache() {
-    final url = widget.coverUrl;
+    final url = LocalImages.resolve(widget.coverUrl);
     cachedCover = url == null || url.isEmpty
         ? null
+        : !url.startsWith('http')
+        ? Future.value(File(url))
         : _coverCache.putIfAbsent(url, () => _cacheCover(url));
   }
 
   @override
   Widget build(BuildContext context) {
-    final localPath = widget.localCoverPath?.isNotEmpty == true
+    final storedCover = LocalImages.resolve(
+      widget.coverStorageUrl ?? widget.coverPath,
+    );
+    final localPath =
+        storedCover?.isNotEmpty == true && !storedCover!.startsWith('http')
+        ? storedCover
+        : widget.localCoverPath?.isNotEmpty == true
         ? widget.localCoverPath
         : widget.coverPath?.startsWith('http') == true
         ? null
@@ -83,12 +91,22 @@ class _BookCoverState extends State<_BookCover> {
   }
 
   Widget _networkImage(BuildContext context, [String? url]) {
-    final source = url ?? widget.coverUrl;
+    final source = LocalImages.resolve(url ?? widget.coverUrl);
     if (source?.isNotEmpty != true) return _fallback(context);
+    if (!source!.startsWith('http')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        child: Image.file(
+          File(source),
+          fit: widget.fit,
+          errorBuilder: (_, _, _) => _fallback(context),
+        ),
+      );
+    }
     return ClipRRect(
       borderRadius: BorderRadius.circular(widget.borderRadius),
       child: Image.network(
-        source!,
+        source,
         fit: widget.fit,
         cacheWidth: _coverCacheWidth,
         cacheHeight: _coverCacheHeight,

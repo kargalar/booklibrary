@@ -1,9 +1,7 @@
 import 'dart:convert';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
-import '../firebase_options.dart';
 import 'book_facets.dart';
 
 part 'book_metadata_lookup.dart';

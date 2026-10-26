@@ -117,7 +117,7 @@ extension _LibraryPageStatePart4 on _LibraryPageState {
                       favorite: favorite,
                     ),
                     onRate: (value) async {
-                      final user = FirebaseAuth.instance.currentUser;
+                      final user = LocalIdentity.instance.currentUser;
                       if (user == null) return;
                       await social.rateBook(
                         bookId: doc.id,
@@ -129,7 +129,7 @@ extension _LibraryPageStatePart4 on _LibraryPageState {
                       _ratingSummaries.remove(doc.id);
                     },
                     onReview: (value, review) async {
-                      final user = FirebaseAuth.instance.currentUser;
+                      final user = LocalIdentity.instance.currentUser;
                       if (user == null) return;
                       await social.rateBook(
                         bookId: doc.id,
@@ -195,7 +195,7 @@ extension _LibraryPageStatePart4 on _LibraryPageState {
                         : null,
                     accessibleLibraries: libraries,
                     onRequestLoan: (library) async {
-                      final user = FirebaseAuth.instance.currentUser;
+                      final user = LocalIdentity.instance.currentUser;
                       if (user == null || library.bookId.isEmpty) return;
                       await social.requestLoan(
                         bookId: library.bookId,

@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'local_database.dart';
+import 'local_identity.dart';
+import '../app/local_strings.dart';
 
 import 'book_repository.dart';
 import 'library_stats.dart';
@@ -249,34 +250,40 @@ class LibraryOwner {
 }
 
 class SocialRepository {
-  SocialRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  void _requireOnlineRequests() =>
+      throw const FormatException(LocalStrings.requestsUnavailable);
+  SocialRepository({LocalDatabase? database})
+    : _database = database ?? LocalDatabase.instance;
 
-  final FirebaseFirestore _firestore;
+  final LocalDatabase _database;
 
   CollectionReference<Map<String, dynamic>> get _users =>
-      _firestore.collection('users');
+      _database.collection('users');
   CollectionReference<Map<String, dynamic>> get _usernames =>
-      _firestore.collection('usernames');
+      _database.collection('usernames');
   CollectionReference<Map<String, dynamic>> get _requests =>
-      _firestore.collection('friendRequests');
+      _database.collection('friendRequests');
   CollectionReference<Map<String, dynamic>> get _links =>
-      _firestore.collection('friendLinks');
+      _database.collection('friendLinks');
   CollectionReference<Map<String, dynamic>> get _libraryBooks =>
-      _firestore.collection('libraryBooks');
+      _database.collection('libraryBooks');
   CollectionReference<Map<String, dynamic>> get _books =>
-      _firestore.collection('books');
+      _database.collection('books');
   CollectionReference<Map<String, dynamic>> get _loanRequests =>
-      _firestore.collection('loanRequests');
+      _database.collection('loanRequests');
   CollectionReference<Map<String, dynamic>> get _notifications =>
-      _firestore.collection('notifications');
+      _database.collection('notifications');
 
-  Future<void> ensureProfile(User user) => _users.doc(user.uid).set({
-    'email': user.email ?? '',
-    'emailNormalized': (user.email ?? '').trim().toLowerCase(),
-    'displayName': user.displayName ?? '',
-    'updatedAt': FieldValue.serverTimestamp(),
-  }, SetOptions(merge: true));
+  Future<void> ensureProfile(LocalUser user) async {
+    final reference = _users.doc(user.uid);
+    if ((await reference.get()).exists) return;
+    await reference.set({
+      'email': user.email ?? '',
+      'emailNormalized': (user.email ?? '').trim().toLowerCase(),
+      'displayName': user.displayName ?? '',
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
 
   Future<void> setLibraryName(String uid, String value) {
     final name = value.trim();
@@ -302,7 +309,7 @@ class SocialRepository {
     }
     final userReference = _users.doc(uid);
     final usernameReference = _usernames.doc(normalized);
-    await _firestore.runTransaction((transaction) async {
+    await _database.runTransaction((transaction) async {
       final userSnapshot = await transaction.get(userReference);
       final usernameSnapshot = await transaction.get(usernameReference);
       final ownerId = usernameSnapshot.data()?['uid'];
@@ -392,6 +399,7 @@ class SocialRepository {
     required UserProfile target,
     String permission = 'read',
   }) {
+    _requireOnlineRequests();
     if (fromId == target.id) {
       throw const FormatException(
         'You cannot send a friend request to yourself.',
@@ -410,7 +418,8 @@ class SocialRepository {
   }
 
   Future<void> acceptRequest(FriendRequest request) async {
-    final batch = _firestore.batch();
+    _requireOnlineRequests();
+    final batch = _database.batch();
     batch.update(_requests.doc(request.id), {
       'status': 'accepted',
       'respondedAt': FieldValue.serverTimestamp(),
@@ -436,10 +445,10 @@ class SocialRepository {
   }) => _links.doc(linkId).update({'permissions.$memberId': permission});
 
   Stream<LibraryBookSnapshot> books(String ownerId) =>
-      BookRepository(firestore: _firestore).watch(ownerId, completedOnly: true);
+      BookRepository(database: _database).watch(ownerId, completedOnly: true);
 
   Stream<LibraryBookSnapshot> sharedBooks(String ownerId) =>
-      BookRepository(firestore: _firestore).watch(ownerId);
+      BookRepository(database: _database).watch(ownerId);
 
   Stream<QuerySnapshot<Map<String, dynamic>>> ratings(String bookId) =>
       _libraryBooks.doc(bookId).collection('ratings').snapshots();
@@ -500,7 +509,7 @@ class SocialRepository {
 
   Future<void> rateBook({
     required String bookId,
-    required User user,
+    required LocalUser user,
     required int value,
     String review = '',
   }) async {
@@ -636,8 +645,9 @@ class SocialRepository {
     required String bookId,
     required String ownerId,
     required String bookTitle,
-    required User requester,
+    required LocalUser requester,
   }) async {
+    _requireOnlineRequests();
     final requesterProfile = await profile(requester.uid);
     final requesterName = requesterProfile?.username.isNotEmpty == true
         ? '@${requesterProfile!.username}'
@@ -645,7 +655,7 @@ class SocialRepository {
         ? requester.displayName!.trim()
         : requester.email?.split('@').first ?? 'Reader';
     final requestRef = _loanRequests.doc('${bookId}_${requester.uid}');
-    await _firestore.runTransaction((transaction) async {
+    await _database.runTransaction((transaction) async {
       final relationReference = _libraryBooks.doc(bookId);
       final relationSnapshot = await transaction.get(relationReference);
       final relation = relationSnapshot.data();
@@ -696,7 +706,8 @@ class SocialRepository {
   }
 
   Future<void> approveLoanRequest(LoanRequest request) async {
-    await _firestore.runTransaction((transaction) async {
+    _requireOnlineRequests();
+    await _database.runTransaction((transaction) async {
       final current = (await transaction.get(_loanRequests.doc(request.id)))
           .data();
       final relationReference = _libraryBooks.doc(request.bookId);
@@ -756,16 +767,9 @@ class SocialRepository {
     required String ownerId,
     required String borrowerId,
     required String bookTitle,
-  }) => _notifications.add({
-    'bookId': bookId,
-    'toId': borrowerId,
-    'fromId': ownerId,
-    'type': 'loanReminder',
-    'title': 'Book loan reminder',
-    'body': 'You have “$bookTitle”. Remember to return it to its owner.',
-    'read': false,
-    'createdAt': FieldValue.serverTimestamp(),
-  });
+  }) async {
+    _requireOnlineRequests();
+  }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> notifications(String uid) =>
       _notifications.where('toId', isEqualTo: uid).snapshots();

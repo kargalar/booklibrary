@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'local_database.dart';
 
 import 'book_facets.dart';
 import 'book_metadata.dart';

@@ -5,7 +5,7 @@
 
 **A thoughtful home for the books you own and the ones you are reading.**
 
-Organize your collection, keep notes and favorite quotes, and continue reading across devices.
+Organize your collection, keep notes and favorite quotes, and read offline on Android.
 
 [![Android](https://img.shields.io/badge/Android-APK-3DDC84?logo=android&logoColor=white)](https://github.com/kargalar/booklibrary/releases/latest) [![Windows](https://img.shields.io/badge/Windows-x64-0078D4?logo=windows&logoColor=white)](https://github.com/kargalar/booklibrary/releases/latest) [![Release](https://img.shields.io/github/v/release/kargalar/booklibrary?color=E0A458)](https://github.com/kargalar/booklibrary/releases/latest) [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
@@ -27,8 +27,8 @@ Track the books you own, the ones you are reading, and the titles you want to fi
 - Search and compare book details from supported catalog providers.
 - Read PDF and EPUB books and listen to audiobooks in the app.
 - Track reading progress, loans, purchases, and library statistics.
-- Sync your library across Android and Windows with Firebase.
-- Share libraries and reading activity with friends.
+- Store your library, notes, ratings, reading progress and files locally with SQLite.
+- Open an existing migrated library without signing in or connecting to Firebase.
 
 ## Download
 
@@ -36,17 +36,16 @@ Get the latest Android APK or Windows x64 package from [GitHub Releases](https:/
 
 ## Build from source
 
-Install [Flutter](https://docs.flutter.dev/get-started/install), the Android SDK, and Visual Studio with the Desktop development with C++ workload for Windows builds. Configure a Firebase project for Authentication, Cloud Firestore, and Cloud Storage, then generate the platform options with the FlutterFire CLI. Set `GOOGLE_BOOKS_API_KEY` to a key restricted to the Google Books API when you want ISBN lookups from Google Books. Keep OAuth credentials, service account files, and provider API tokens in local ignored configuration or Firebase Secret Manager.
+Install [Flutter](https://docs.flutter.dev/get-started/install) and the Android SDK. Android is the supported target for this local version. Firebase configuration and Google sign-in are not required. Optional book metadata lookups and unavailable remote covers still need internet; creating, editing, searching the imported catalog, reading saved files, and recording progress work offline.
 
 ```sh
 flutter pub get
 flutter analyze
 flutter test
 flutter build apk --release
-flutter build windows --release
 ```
 
-The `functions` directory contains the optional Hardcover metadata lookup service. It requires Node.js 20 and a `HARDCOVER_API_TOKEN` secret configured in Firebase Functions.
+Existing installations must be upgraded with the same application ID and signing key, without uninstalling or clearing app data. See [local migration and recovery](docs/local-migration.md). Historical Firebase maintenance scripts remain in `functions` for archive export and verification; they are not part of the Android application. Online friend requests, loan requests and reminders are unavailable in local mode; existing records and in-person loan tracking remain available.
 
 ## License
 

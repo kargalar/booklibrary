@@ -2,7 +2,7 @@ part of 'reader_page.dart';
 
 // Split by reader concern while preserving the existing StatefulWidget state.
 // ignore_for_file: invalid_use_of_protected_member
-extension _ReaderPageStatePart2 on _ReaderPageState {
+extension _ReaderPdfView on _ReaderPageState {
   Widget _pdfViewer(bool dark) {
     final viewer = PdfViewer.file(
       widget.file.path,
@@ -14,11 +14,11 @@ extension _ReaderPageStatePart2 on _ReaderPageState {
         backgroundColor: dark
             ? Colors.white
             : palette == 1
-            ? const Color(0xFF9E907B)
+            ? const Color(0xFFDFD3BF)
             : _pdfLoadingColor,
         pageDropShadow: const BoxShadow(
-          color: Colors.black45,
-          blurRadius: 5,
+          color: Color(0x24000000),
+          blurRadius: 8,
           spreadRadius: 1,
           offset: Offset(1, 2),
         ),
@@ -46,6 +46,7 @@ extension _ReaderPageStatePart2 on _ReaderPageState {
         },
         onViewerReady: (document, controller) {
           pdfPages = controller.pageCount;
+          bookmarks.removeWhere((page) => page < 1 || page > pdfPages);
           final resolvedPage = (controller.pageNumber ?? position)
               .clamp(1, pdfPages)
               .toInt();
@@ -174,290 +175,21 @@ extension _ReaderPageStatePart2 on _ReaderPageState {
     return ColorFiltered(colorFilter: ColorFilter.matrix(matrix), child: child);
   }
 
-  Widget _pdfTopBar() {
-    final foreground = palette == 2 ? Colors.white : Colors.black87;
-    final surface = palette == 2
-        ? const Color(0xEE1C1F23)
-        : Colors.white.withAlpha(242);
-    return Material(
-      color: surface,
-      elevation: 5,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(4, 2, 6, 6),
-        child: Row(
-          children: [
-            IconButton(
-              tooltip: 'Close',
-              color: foreground,
-              onPressed: closeReader,
-              icon: const Icon(Icons.arrow_back_rounded),
-            ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: foreground,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    pdfPages == 0
-                        ? 'PDF is being prepared…'
-                        : 'Page $position / $pdfPages  •  ${(progress * 100).round()}% complete',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: foreground.withAlpha(170),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (selectedText.trim().isNotEmpty)
-              IconButton(
-                tooltip: 'Add as quote',
-                color: foreground,
-                onPressed: addText,
-                icon: const Icon(Icons.format_quote_rounded),
-              ),
-            IconButton(
-              tooltip: 'Search in PDF',
-              color: foreground,
-              onPressed: showPdfSearch,
-              icon: const Icon(Icons.search_rounded),
-            ),
-            IconButton(
-              tooltip: bookmarks.contains(position)
-                  ? 'remove bookmark'
-                  : 'Add bookmark',
-              color: foreground,
-              onPressed: toggleBookmark,
-              icon: Icon(
-                bookmarks.contains(position)
-                    ? Icons.bookmark_rounded
-                    : Icons.bookmark_border_rounded,
-              ),
-            ),
-            PopupMenuButton<String>(
-              tooltip: 'reading tools',
-              icon: Icon(Icons.more_vert_rounded, color: foreground),
-              onSelected: (value) {
-                switch (value) {
-                  case 'pages':
-                    unawaited(showPageNavigator());
-                  case 'bookmarks':
-                    unawaited(showBookmarks());
-                  case 'goto':
-                    unawaited(showGoToPage());
-                  case 'settings':
-                    unawaited(settings());
-                  case 'zoomIn':
-                    unawaited(zoomPdfIn());
-                  case 'zoomOut':
-                    unawaited(zoomPdfOut());
-                  case 'fit':
-                    unawaited(fitPdfPage());
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'pages',
-                  child: ListTile(
-                    leading: Icon(Icons.grid_view_rounded),
-                    title: Text('All pages'),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'bookmarks',
-                  child: ListTile(
-                    leading: Icon(Icons.bookmarks_rounded),
-                    title: Text('Yer imleri'),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'goto',
-                  child: ListTile(
-                    leading: Icon(Icons.find_in_page_rounded),
-                    title: Text('Go to page'),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'settings',
-                  child: ListTile(
-                    leading: Icon(Icons.tune_rounded),
-                    title: Text('Reading settings'),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'zoomIn',
-                  child: ListTile(
-                    leading: Icon(Icons.zoom_in_rounded),
-                    title: Text('zoom in'),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'zoomOut',
-                  child: ListTile(
-                    leading: Icon(Icons.zoom_out_rounded),
-                    title: Text('zoom out'),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'fit',
-                  child: ListTile(
-                    leading: Icon(Icons.fit_screen_rounded),
-                    title: Text('Fit page'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+  Widget _buildPdfReader() => Stack(
+    children: [
+      Positioned.fill(child: _pdfViewer(palette == 2)),
+      if (!showChrome)
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FilledButton.tonalIcon(
+            onPressed: revealChrome,
+            icon: const Icon(Icons.tune_rounded),
+            label: Text('Page $position / $pdfPages'),
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _pdfBottomBar() {
-    final foreground = palette == 2 ? Colors.white : Colors.black87;
-    final surface = palette == 2
-        ? const Color(0xEE1C1F23)
-        : Colors.white.withAlpha(242);
-    final maxPage = pdfPages > 0 ? pdfPages.toDouble() : 1.0;
-    final sliderPage = position
-        .clamp(1, pdfPages > 0 ? pdfPages : 1)
-        .toDouble();
-    return Material(
-      color: surface,
-      elevation: 8,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 3, 14, 6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                trackHeight: 3,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              ),
-              child: Slider(
-                value: sliderPage,
-                min: 1,
-                max: maxPage,
-                label: 'Page ${sliderPage.round()}',
-                onChanged: pdfPages == 0
-                    ? null
-                    : (value) {
-                        revealChrome();
-                        setState(() => position = value.round());
-                      },
-                onChangeEnd: pdfPages == 0
-                    ? null
-                    : (value) => unawaited(goToPdfPage(value.round())),
-              ),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  tooltip: 'Previous page',
-                  color: foreground,
-                  onPressed: position > 1
-                      ? () => unawaited(goToPdfPage(position - 1))
-                      : null,
-                  icon: const Icon(Icons.chevron_left_rounded),
-                ),
-                Expanded(
-                  child: Center(
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: showGoToPage,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        child: Text(
-                          pdfPages == 0
-                              ? 'PDF loading…'
-                              : 'Page $position / $pdfPages',
-                          style: TextStyle(
-                            color: foreground,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Next page',
-                  color: foreground,
-                  onPressed: position < pdfPages
-                      ? () => unawaited(goToPdfPage(position + 1))
-                      : null,
-                  icon: const Icon(Icons.chevron_right_rounded),
-                ),
-                IconButton(
-                  tooltip: 'Pages',
-                  color: foreground,
-                  onPressed: showPageNavigator,
-                  icon: const Icon(Icons.grid_view_rounded),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPdfReader() {
-    final dark = palette == 2;
-    return ColoredBox(
-      color: dark
-          ? const Color(0xFF101214)
-          : palette == 1
-          ? const Color(0xFF8C806E)
-          : const Color(0xFF42474D),
-      child: Stack(
-        children: [
-          Positioned.fill(child: _pdfViewer(dark)),
-          if (showChrome)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(bottom: false, child: _pdfTopBar()),
-            ),
-          if (showChrome)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: SafeArea(top: false, child: _pdfBottomBar()),
-            ),
-          if (!showChrome && selectedText.trim().isNotEmpty)
-            Positioned(
-              right: 18,
-              bottom: 22,
-              child: SafeArea(
-                child: FloatingActionButton.extended(
-                  heroTag: 'pdf-quote-action',
-                  onPressed: addText,
-                  icon: const Icon(Icons.format_quote_rounded),
-                  label: const Text('Add quote'),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+    ],
+  );
 
   Future<void> closeReader() async {
     if (closing) return;

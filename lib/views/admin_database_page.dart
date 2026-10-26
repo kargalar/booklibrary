@@ -1,7 +1,8 @@
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../data/local_database.dart';
+import '../data/local_identity.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -32,7 +33,7 @@ class AdminDatabasePage extends StatefulWidget {
 }
 
 class _AdminDatabasePageState extends State<AdminDatabasePage> {
-  final _firestore = FirebaseFirestore.instance;
+  final _database = LocalDatabase.instance;
   final _searchController = TextEditingController();
   String _collection = _adminCollections.first;
 
@@ -46,7 +47,7 @@ class _AdminDatabasePageState extends State<AdminDatabasePage> {
   Widget build(BuildContext context) {
     if (!isDatabaseAdmin(
       platform: defaultTargetPlatform,
-      email: FirebaseAuth.instance.currentUser?.email,
+      email: LocalIdentity.instance.currentUser?.email,
     )) {
       return Scaffold(
         appBar: AppBar(title: const Text('Admin paneli')),
@@ -94,7 +95,7 @@ class _AdminDatabasePageState extends State<AdminDatabasePage> {
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               // ponytail: first 200 documents; add cursor pagination when this ceiling matters.
-              stream: _firestore.collection(_collection).limit(200).snapshots(),
+              stream: _database.collection(_collection).limit(200).snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return _ErrorState(message: snapshot.error.toString());
@@ -149,7 +150,7 @@ class _AdminDatabasePageState extends State<AdminDatabasePage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openEditor(
-          _firestore.collection(_collection).doc(),
+          _database.collection(_collection).doc(),
           const {},
           isNew: true,
         ),
@@ -352,19 +353,19 @@ String _displayValue(Object? value) {
 Object? _encodeFirestoreValue(Object? value) {
   if (value is Timestamp) {
     return {
-      '__firestoreType': 'timestamp',
+      '__databaseType': 'timestamp',
       'value': value.toDate().toIso8601String(),
     };
   }
   if (value is GeoPoint) {
     return {
-      '__firestoreType': 'geoPoint',
+      '__databaseType': 'geoPoint',
       'latitude': value.latitude,
       'longitude': value.longitude,
     };
   }
   if (value is DocumentReference) {
-    return {'__firestoreType': 'reference', 'path': value.path};
+    return {'__databaseType': 'reference', 'path': value.path};
   }
   if (value is Map) {
     return {
@@ -379,7 +380,7 @@ Object? _encodeFirestoreValue(Object? value) {
 Object? _decodeFirestoreValue(Object? value) {
   if (value is List) return value.map(_decodeFirestoreValue).toList();
   if (value is Map) {
-    final type = value['__firestoreType'];
+    final type = value['__databaseType'];
     if (type == 'timestamp' && value['value'] is String) {
       return Timestamp.fromDate(DateTime.parse(value['value'] as String));
     }
@@ -392,7 +393,7 @@ Object? _decodeFirestoreValue(Object? value) {
       );
     }
     if (type == 'reference' && value['path'] is String) {
-      return FirebaseFirestore.instance.doc(value['path'] as String);
+      return LocalDatabase.instance.doc(value['path'] as String);
     }
     return {
       for (final entry in value.entries)

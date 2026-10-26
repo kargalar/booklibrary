@@ -1,11 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../data/local_database.dart';
+import '../data/local_identity.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../app/providers.dart';
+import '../app/local_strings.dart';
 import '../data/book_repository.dart';
 import '../data/library_book_snapshot.dart';
 import '../data/library_stats.dart';
@@ -20,7 +22,7 @@ part 'profile_components.dart';
 class ProfileGate extends StatefulWidget {
   const ProfileGate({super.key, required this.user});
 
-  final User user;
+  final LocalUser user;
 
   @override
   State<ProfileGate> createState() => _ProfileGateState();
@@ -73,7 +75,7 @@ class UsernameSetupPage extends StatefulWidget {
     required this.onSaved,
   });
 
-  final User user;
+  final LocalUser user;
   final Future<void> Function() onSaved;
 
   @override

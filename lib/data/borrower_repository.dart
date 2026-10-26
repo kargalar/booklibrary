@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'local_database.dart';
 
 class Borrower {
   const Borrower({required this.id, required this.name});
@@ -18,13 +18,13 @@ class Borrower {
 }
 
 class BorrowerRepository {
-  BorrowerRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  BorrowerRepository({LocalDatabase? database})
+    : _database = database ?? LocalDatabase.instance;
 
-  final FirebaseFirestore _firestore;
+  final LocalDatabase _database;
 
   CollectionReference<Map<String, dynamic>> get _borrowers =>
-      _firestore.collection('borrowers');
+      _database.collection('borrowers');
 
   Stream<QuerySnapshot<Map<String, dynamic>>> watch(String ownerId) =>
       _borrowers.where('ownerId', isEqualTo: ownerId).snapshots();

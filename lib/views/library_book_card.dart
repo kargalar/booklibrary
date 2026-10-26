@@ -73,8 +73,8 @@ class _BookCard extends StatelessWidget {
     final syncFailed = data['syncStatus'] == 'failed';
     final statusLabel = localOnly
         ? syncFailed
-              ? 'Could not upload to cloud'
-              : 'Uploading to cloud'
+              ? LocalStrings.saveFailed
+              : LocalStrings.saving
         : wishlist
         ? 'purchase list'
         : overdue
@@ -290,8 +290,8 @@ class _BookCard extends StatelessWidget {
                             : statusColorValue,
                         localOnly
                             ? syncFailed
-                                  ? 'Failed to upload to cloud · Try again from details'
-                                  : 'Saved on this device · Uploading to the cloud'
+                                  ? LocalStrings.saveFailed
+                                  : LocalStrings.saving
                             : wishlist
                             ? 'wish list'
                             : bookStatusLabel(bookStatus),

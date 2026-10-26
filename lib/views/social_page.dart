@@ -1,5 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../data/local_database.dart';
+import '../data/local_identity.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/library_stats.dart';
@@ -67,7 +68,7 @@ class _SocialPageState extends State<SocialPage> {
 
   Future<void> sendRequest() async {
     final target = foundUser;
-    final user = FirebaseAuth.instance.currentUser;
+    final user = LocalIdentity.instance.currentUser;
     if (target == null || user == null || sending) return;
     setState(() => sending = true);
     try {
@@ -677,7 +678,7 @@ class FriendBookDetailPage extends StatelessWidget {
     LibraryOwner library,
     String title,
   ) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = LocalIdentity.instance.currentUser;
     if (user == null || library.bookId.isEmpty) return;
     await repository.requestLoan(
       bookId: library.bookId,
@@ -776,7 +777,7 @@ class FriendBookDetailPage extends StatelessWidget {
       );
 
   Future<void> _rate(BuildContext context, int value) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = LocalIdentity.instance.currentUser;
     if (user == null) return;
     try {
       await repository.rateBook(bookId: book.id, user: user, value: value);
@@ -821,7 +822,7 @@ class FriendBookDetailPage extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> data,
   ) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = LocalIdentity.instance.currentUser;
     final ownerId = data['ownerId'];
     if (user == null || ownerId is! String) return;
     try {

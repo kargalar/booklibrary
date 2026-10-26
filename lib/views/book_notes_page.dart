@@ -4,12 +4,15 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../app/local_strings.dart';
+
 import '../data/social_repository.dart';
 import '../data/spotify_music.dart';
 import 'image_shimmer.dart';
 import 'spotify_music_card.dart';
 
 part 'book_notes_editor.dart';
+part 'book_notes_layout.dart';
 
 class BookNotesPage extends StatefulWidget {
   const BookNotesPage({
@@ -362,79 +365,82 @@ class _BookNotesPageState extends State<BookNotesPage> {
       useSafeArea: true,
       showDragHandle: true,
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            4,
-            20,
-            20 + MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                _myReview.isEmpty ? 'Add review' : 'Edit my review',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var value = 1; value <= 5; value++)
-                    IconButton(
-                      tooltip: '$value stars',
-                      onPressed: () =>
-                          setModalState(() => selectedRating = value),
-                      icon: Icon(
-                        value <= selectedRating
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded,
-                        color: Colors.amber.shade700,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                initialValue: reviewText,
-                autofocus: true,
-                minLines: 3,
-                maxLines: 7,
-                maxLength: 2000,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Review',
-                  hintText: 'Share your thoughts about the book',
-                  alignLabelWithHint: true,
+        builder: (context, setModalState) => SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              4,
+              20,
+              20 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  _myReview.isEmpty ? 'Add review' : 'Edit my review',
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-                onChanged: (value) => reviewText = value,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var value = 1; value <= 5; value++)
+                      IconButton(
+                        tooltip: '$value stars',
+                        onPressed: () =>
+                            setModalState(() => selectedRating = value),
+                        icon: Icon(
+                          value <= selectedRating
+                              ? Icons.star_rounded
+                              : Icons.star_border_rounded,
+                          color: Colors.amber.shade700,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  initialValue: reviewText,
+                  autofocus: true,
+                  minLines: 3,
+                  maxLines: 7,
+                  maxLength: 2000,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    labelText: 'Review',
+                    hintText: 'Share your thoughts about the book',
+                    alignLabelWithHint: true,
                   ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: selectedRating == 0
-                        ? null
-                        : () {
-                            final review = reviewText.trim();
-                            if (review.isEmpty) return;
-                            Navigator.pop(context, (
-                              rating: selectedRating,
-                              review: review,
-                            ));
-                          },
-                    child: const Text('Publish'),
-                  ),
-                ],
-              ),
-            ],
+                  onChanged: (value) => setModalState(() => reviewText = value),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed:
+                          selectedRating == 0 || reviewText.trim().isEmpty
+                          ? null
+                          : () {
+                              final review = reviewText.trim();
+                              if (review.isEmpty) return;
+                              Navigator.pop(context, (
+                                rating: selectedRating,
+                                review: review,
+                              ));
+                            },
+                      child: const Text('Publish'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -546,80 +552,6 @@ class _BookNotesPageState extends State<BookNotesPage> {
     }
   }
 
-  Widget section({required bool quote}) {
-    final entries = quote ? quotes : notes;
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 10, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  quote ? Icons.format_quote_rounded : Icons.notes_rounded,
-                  color: scheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    quote ? 'Quotes' : 'Notes',
-                    style: Theme.of(context).textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                ),
-                if (widget.canEdit)
-                  TextButton.icon(
-                    onPressed: saving ? null : () => editEntry(quote: quote),
-                    icon: const Icon(Icons.add_rounded),
-                    label: Text(quote ? 'Add quote' : 'Add note'),
-                  ),
-              ],
-            ),
-            if (entries.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(32, 4, 8, 12),
-                child: Text(
-                  quote ? 'No quotes added yet.' : 'No notes added yet.',
-                  style: TextStyle(color: scheme.onSurfaceVariant),
-                ),
-              )
-            else
-              for (var i = 0; i < entries.length; i++)
-                ListTile(
-                  contentPadding: const EdgeInsets.only(left: 8),
-                  leading: Text(
-                    '•',
-                    style: TextStyle(
-                      color: scheme.primary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  title: Text(entries[i]),
-                  trailing: !widget.canEdit
-                      ? null
-                      : PopupMenuButton<String>(
-                          enabled: !saving,
-                          onSelected: (value) => value == 'edit'
-                              ? editEntry(quote: quote, index: i)
-                              : removeEntry(quote: quote, index: i),
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(value: 'edit', child: Text('Edit')),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text('Delete'),
-                            ),
-                          ],
-                        ),
-                ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget spotifySection() {
     final canEdit = widget.onSpotifyUrlsChanged != null;
     if (_spotifyUrls.isEmpty) {
@@ -699,103 +631,6 @@ class _BookNotesPageState extends State<BookNotesPage> {
     );
   }
 
-  Widget ratingSection() {
-    if (widget.onRate == null &&
-        widget.onReview == null &&
-        widget.onFavoriteChanged == null) {
-      return const SizedBox.shrink();
-    }
-    final average = widget.ratings.isEmpty
-        ? 0.0
-        : widget.ratings.map((rating) => rating.value).reduce((a, b) => a + b) /
-              widget.ratings.length;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.star_rounded, color: Colors.amber),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Ratings',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-                if (widget.onFavoriteChanged != null)
-                  IconButton(
-                    tooltip: favorite
-                        ? 'Remove from favorites'
-                        : 'Add to favorites',
-                    onPressed: saving ? null : changeFavorite,
-                    icon: Icon(
-                      favorite
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      color: favorite ? Colors.red : null,
-                    ),
-                  ),
-                Text('${widget.ratings.length} people'),
-                if (widget.ratings.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Text('${average.toStringAsFixed(1)} / 5'),
-                ],
-              ],
-            ),
-            if (widget.onRate != null)
-              Row(
-                children: [
-                  for (var value = 1; value <= 5; value++)
-                    IconButton(
-                      tooltip: '$value stars',
-                      onPressed: saving ? null : () => rate(value),
-                      icon: Icon(
-                        value <= (_myRating ?? 0)
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded,
-                        color: Colors.amber.shade700,
-                      ),
-                    ),
-                ],
-              ),
-            if (_myRating != null && widget.onRemoveRating != null)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: saving ? null : removeRating,
-                  icon: const Icon(Icons.delete_outline_rounded),
-                  label: const Text('remove my score'),
-                ),
-              ),
-            if (widget.onReview != null)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FilledButton.tonalIcon(
-                  onPressed: saving ? null : editReview,
-                  icon: const Icon(Icons.rate_review_outlined),
-                  label: Text(
-                    _myReview.isEmpty ? 'Add review' : 'Edit my review',
-                  ),
-                ),
-              ),
-            if (widget.ratings.isNotEmpty)
-              for (final rating in widget.ratings)
-                ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(rating.userName),
-                  subtitle: rating.review.isEmpty ? null : Text(rating.review),
-                  trailing: Text('⭐ ${rating.value}'),
-                ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget bookHeader() {
     final scheme = Theme.of(context).colorScheme;
     final fallback = DecoratedBox(
@@ -805,7 +640,7 @@ class _BookNotesPageState extends State<BookNotesPage> {
       ),
       child: Icon(
         Icons.menu_book_rounded,
-        size: 42,
+        size: 26,
         color: scheme.onPrimaryContainer,
       ),
     );
@@ -820,8 +655,8 @@ class _BookNotesPageState extends State<BookNotesPage> {
         ? widget.coverPath
         : widget.coverUrl;
     final cover = SizedBox(
-      width: 108,
-      height: 156,
+      width: 56,
+      height: 84,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: path?.startsWith('http') == true
@@ -838,7 +673,11 @@ class _BookNotesPageState extends State<BookNotesPage> {
                 File(path!),
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => url?.isNotEmpty == true
-                    ? Image.network(url!, fit: BoxFit.cover)
+                    ? Image.network(
+                        url!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => fallback,
+                      )
                     : fallback,
               )
             : url?.isNotEmpty == true
@@ -857,45 +696,42 @@ class _BookNotesPageState extends State<BookNotesPage> {
       if (widget.pageCount != null) '${widget.pageCount} pages',
       if (widget.publisher?.isNotEmpty == true) widget.publisher!,
     ];
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            cover,
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.title,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  if (widget.author?.isNotEmpty == true) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.author!,
-                      style: TextStyle(color: scheme.onSurfaceVariant),
-                    ),
-                  ],
-                  if (details.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      details.join(' • '),
-                      style: TextStyle(color: scheme.onSurfaceVariant),
-                    ),
-                  ],
-                ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        cover,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.title,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
-            ),
-          ],
+              if (widget.author?.isNotEmpty == true) ...[
+                const SizedBox(height: 4),
+                Text(
+                  widget.author!,
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
+              if (details.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  details.join(' • '),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -916,9 +752,7 @@ class _BookNotesPageState extends State<BookNotesPage> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                failed
-                    ? 'This book is saved on this device but could not be uploaded to the cloud.'
-                    : 'This book is saved on the device and uploaded to the cloud.',
+                failed ? LocalStrings.saveFailed : LocalStrings.saving,
                 style: TextStyle(
                   color: failed ? scheme.onErrorContainer : scheme.onSurface,
                   fontWeight: FontWeight.w700,
@@ -949,11 +783,8 @@ class _BookNotesPageState extends State<BookNotesPage> {
       await retry();
       if (!mounted) return;
       setState(() => _syncResolved = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('The book has been uploaded to the cloud.'),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text(LocalStrings.saved)));
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -961,7 +792,7 @@ class _BookNotesPageState extends State<BookNotesPage> {
             content: Text(
               error is FormatException
                   ? error.message
-                  : 'Upload to cloud failed.',
+                  : LocalStrings.saveFailed,
             ),
           ),
         );
@@ -1079,7 +910,7 @@ class _BookNotesPageState extends State<BookNotesPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text(widget.title),
+      title: const Text(_NotesLabels.pageTitle),
       actions: [
         if (widget.onEdit != null)
           IconButton(
@@ -1153,32 +984,6 @@ class _BookNotesPageState extends State<BookNotesPage> {
           ),
       ],
     ),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-      children: [
-        bookHeader(),
-        const SizedBox(height: 14),
-        if (widget.onSpotifyUrlsChanged != null || _spotifyUrls.isNotEmpty) ...[
-          spotifySection(),
-          const SizedBox(height: 14),
-        ],
-        syncSection(),
-        if (widget.localOnly && !_syncResolved) const SizedBox(height: 14),
-        Text(
-          'Save your thoughts and favorite sentences about this book.',
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ratingSection(),
-        if (widget.onRate != null) const SizedBox(height: 14),
-        librariesSection(),
-        if (widget.accessibleLibraries != null) const SizedBox(height: 14),
-        section(quote: false),
-        const SizedBox(height: 14),
-        section(quote: true),
-      ],
-    ),
+    body: notesBody(),
   );
 }

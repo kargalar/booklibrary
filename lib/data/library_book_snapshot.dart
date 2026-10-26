@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'local_database.dart';
 
 class LibraryBookSnapshot {
   const LibraryBookSnapshot(this._source, this.docs);

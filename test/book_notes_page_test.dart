@@ -25,18 +25,25 @@ void main() {
     await tester.tap(find.text('Add note'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'İlk not');
+    await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Add quote'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'İlk alıntı');
+    await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
     expect(savedNotes, ['İlk not']);
     expect(savedQuotes, ['İlk alıntı']);
     expect(find.text('İlk not'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text(savedQuotes!.single),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('İlk alıntı'), findsOneWidget);
   });
 
@@ -64,6 +71,7 @@ void main() {
     final field = tester.widget<TextFormField>(find.byType(TextFormField));
     expect(field.controller?.text, 'Fotoğraftan okunan alıntı');
 
+    await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
     expect(savedQuotes, ['Fotoğraftan okunan alıntı']);
@@ -142,10 +150,79 @@ void main() {
       find.byType(TextFormField),
       'Çok akıcı bir kitaptı.',
     );
+    await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Publish'));
     await tester.pumpAndSettle();
 
     expect(savedRating, 4);
     expect(savedReview, 'Çok akıcı bir kitaptı.');
   });
+
+  for (final size in [const Size(320, 640), const Size(1200, 900)]) {
+    testWidgets('journal adapts to $size with large text', (tester) async {
+      await tester.binding.setSurfaceSize(size);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      int? savedRating;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(
+            colorSchemeSeed: Colors.teal,
+            brightness: Brightness.dark,
+          ),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(1.5)),
+            child: child!,
+          ),
+          home: BookNotesPage(
+            title: 'A long book title that wraps across several lines',
+            author: 'An author with a long name',
+            publisher: 'Independent Publishing House',
+            pageCount: 420,
+            notes: const ['A thought to revisit.'],
+            quotes: const ['A sentence to remember.'],
+            onSave: (_, _) async {},
+            onRate: (value) async => savedRating = value,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.scrollUntilVisible(
+        find.byTooltip('5 stars'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('5 stars'));
+      await tester.pumpAndSettle();
+      expect(savedRating, 5);
+      expect(find.text('Unforgettable'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Add note'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add note'));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'))
+            .onPressed,
+        isNull,
+      );
+      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField), 'A new thought');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextFormField), findsNothing);
+    });
+  }
 }

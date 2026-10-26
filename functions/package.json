@@ -1,32 +1,30 @@
 {
-  "name": "booklibrary-functions",
-  "private": true,
-  "main": "index.js",
-  "engines": {
-    "node": "20"
-  },
-  "scripts": {
-    "check": "node --check index.js && node --check migrate_books_to_library.js && node --check migrate_legacy_covers.js && node --check migrate_api_covers.js && node --check repair_api_cover_tokens.js && node --check import_notion_books.js && node --check import_notion_reading_files.js && node --check import_discover_catalog.js && node --check generate_turkish_catalog.js && node --check generate_curated_catalog.js",
-    "migrate:books": "node migrate_books_to_library.js",
-    "migrate:books:dry-run": "node migrate_books_to_library.js --dry-run",
-    "migrate:covers:api": "node migrate_api_covers.js",
-    "migrate:covers:api:dry-run": "node migrate_api_covers.js --dry-run",
-    "repair:covers:api": "node repair_api_cover_tokens.js",
-    "repair:covers:api:dry-run": "node repair_api_cover_tokens.js --dry-run",
-    "import:notion": "node import_notion_books.js",
-    "import:notion:dry-run": "node import_notion_books.js",
-    "import:notion:files": "node import_notion_reading_files.js",
-    "import:discover": "node import_discover_catalog.js",
-    "import:discover:dry-run": "node import_discover_catalog.js --dry-run",
-    "catalog:turkish": "node generate_turkish_catalog.js",
-    "catalog:curated": "node generate_curated_catalog.js"
-  },
-  "dependencies": {
-    "firebase-admin": "^14.4.0",
-    "firebase-functions": "^7.3.2"
-  },
-  "devDependencies": {
-    "@firebase/rules-unit-testing": "^5.0.2",
-    "firebase": "^12.19.0"
-  }
+    "name":  "booklibrary-legacy-migration-tools",
+    "private":  true,
+    "engines":  {
+                    "node":  "20"
+                },
+    "scripts":  {
+                    "check":  "node --check migrate_books_to_library.js \u0026\u0026 node --check migrate_legacy_covers.js \u0026\u0026 node --check migrate_api_covers.js \u0026\u0026 node --check repair_api_cover_tokens.js \u0026\u0026 node --check import_notion_books.js \u0026\u0026 node --check import_notion_reading_files.js \u0026\u0026 node --check import_discover_catalog.js \u0026\u0026 node --check generate_turkish_catalog.js \u0026\u0026 node --check generate_curated_catalog.js \u0026\u0026 node --check export_local_backup.js \u0026\u0026 node --check retire_local_migration_backend.js",
+                    "migrate:books":  "node migrate_books_to_library.js",
+                    "migrate:books:dry-run":  "node migrate_books_to_library.js --dry-run",
+                    "migrate:covers:api":  "node migrate_api_covers.js",
+                    "migrate:covers:api:dry-run":  "node migrate_api_covers.js --dry-run",
+                    "repair:covers:api":  "node repair_api_cover_tokens.js",
+                    "repair:covers:api:dry-run":  "node repair_api_cover_tokens.js --dry-run",
+                    "import:notion":  "node import_notion_books.js",
+                    "import:notion:dry-run":  "node import_notion_books.js",
+                    "import:notion:files":  "node import_notion_reading_files.js",
+                    "import:discover":  "node import_discover_catalog.js",
+                    "import:discover:dry-run":  "node import_discover_catalog.js --dry-run",
+                    "catalog:turkish":  "node generate_turkish_catalog.js",
+                    "catalog:curated":  "node generate_curated_catalog.js"
+                },
+    "dependencies":  {
+                         "firebase-admin":  "^14.4.0"
+                     },
+    "devDependencies":  {
+                            "@firebase/rules-unit-testing":  "^5.0.2",
+                            "firebase":  "^12.19.0"
+                        }
 }

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:epubx_kuebiko/epubx_kuebiko.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -19,16 +19,6 @@ class BookFiles {
       if (await file.exists()) await file.delete();
       await preferences.remove('$uid.$id.$format.position');
       await preferences.remove('$uid.$id.$format.offset');
-      try {
-        await _remote(uid, id, format).delete();
-      } on FirebaseException catch (error) {
-        if (error.code != 'object-not-found') rethrow;
-      }
-    }
-    try {
-      await _remote(uid, id).delete();
-    } on FirebaseException catch (error) {
-      if (error.code != 'object-not-found') rethrow;
     }
   }
 
@@ -40,6 +30,10 @@ class BookFiles {
     for (final format in formats) {
       final file = File(p.join(root.path, 'books', uid, '$id.$format'));
       if (await file.exists()) return file;
+      final archived = File(
+        p.join(root.path, 'cloud_archive', 'books', uid, id, 'reading.$format'),
+      );
+      if (await archived.exists()) return archived;
     }
     return null;
   }
@@ -76,11 +70,6 @@ class BookFiles {
     return source;
   }
 
-  static Reference _remote(String uid, String id, [String? format]) =>
-      FirebaseStorage.instance.ref(
-        'books/$uid/$id/reading${format == null ? '' : '.$format'}',
-      );
-
   static Future<File?> download({
     required String localUid,
     required String ownerId,
@@ -88,62 +77,8 @@ class BookFiles {
     required String extension,
     void Function(double progress)? onProgress,
   }) async {
-    final format = extension.toLowerCase().replaceFirst('.', '');
-    if (!{'pdf', 'epub'}.contains(format)) return null;
-    final root = await getApplicationDocumentsDirectory();
-    final target = File(p.join(root.path, 'books', localUid, '$id.$format'));
-    await target.parent.create(recursive: true);
-    try {
-      try {
-        await _downloadRemote(_remote(ownerId, id, format), target, onProgress);
-      } on FirebaseException catch (error) {
-        if (error.code != 'object-not-found') rethrow;
-        await _downloadRemote(_remote(ownerId, id), target, onProgress);
-      }
-      final other = File(
-        p.join(target.parent.path, '$id${format == 'pdf' ? '.epub' : '.pdf'}'),
-      );
-      if (await other.exists()) await other.delete();
-      return target;
-    } on FirebaseException catch (error) {
-      if (await target.exists()) await target.delete();
-      if (error.code == 'object-not-found') return null;
-      rethrow;
-    } catch (_) {
-      if (await target.exists()) await target.delete();
-      rethrow;
-    }
-  }
-
-  static Future<void> upload(
-    String uid,
-    String id,
-    File file, {
-    void Function(double progress)? onProgress,
-  }) async {
-    final extension = p.extension(file.path).toLowerCase();
-    if (!['.pdf', '.epub'].contains(extension)) {
-      throw const FormatException('Only PDF or EPUB files can be uploaded.');
-    }
-    final format = extension.substring(1);
-    final task = _remote(uid, id, format).putFile(
-      file,
-      SettableMetadata(
-        contentType: extension == '.pdf'
-            ? 'application/pdf'
-            : 'application/epub+zip',
-      ),
-    );
-    await for (final snapshot in task.snapshotEvents) {
-      if (snapshot.totalBytes > 0) {
-        onProgress?.call(
-          (snapshot.bytesTransferred / snapshot.totalBytes)
-              .clamp(0, 1)
-              .toDouble(),
-        );
-      }
-    }
-    onProgress?.call(1);
+    return await find(localUid, id, extension: extension) ??
+        await find(ownerId, id, extension: extension);
   }
 
   static Future<File> save(
@@ -153,7 +88,7 @@ class BookFiles {
     void Function(double progress)? onProgress,
   }) async {
     final target = await saveLocal(uid, id, source);
-    await upload(uid, id, target, onProgress: onProgress);
+    onProgress?.call(1);
     return target;
   }
 
@@ -218,24 +153,6 @@ class BookFiles {
       final document = await PdfDocument.openFile(source.path);
       await document.dispose();
     }
-  }
-
-  static Future<void> _downloadRemote(
-    Reference remote,
-    File target,
-    void Function(double progress)? onProgress,
-  ) async {
-    final task = remote.writeToFile(target);
-    await for (final snapshot in task.snapshotEvents) {
-      if (snapshot.totalBytes > 0) {
-        onProgress?.call(
-          (snapshot.bytesTransferred / snapshot.totalBytes)
-              .clamp(0, 1)
-              .toDouble(),
-        );
-      }
-    }
-    onProgress?.call(1);
   }
 }
 

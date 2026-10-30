@@ -22,6 +22,8 @@ class BookNotesPage extends StatefulWidget {
     required this.quotes,
     required this.onSave,
     this.onScanQuote,
+    this.quoteNotes = const [],
+    this.onSaveWithQuoteNotes,
     this.author,
     this.coverPath,
     this.coverUrl,
@@ -76,6 +78,9 @@ class BookNotesPage extends StatefulWidget {
       onMoveToLibraries;
   final List<String> notes;
   final List<String> quotes;
+  final List<String> quoteNotes;
+  final Future<void> Function(List<String>, List<String>, List<String>)?
+  onSaveWithQuoteNotes;
   final Future<void> Function(List<String> notes, List<String> quotes) onSave;
   final Future<String?> Function()? onScanQuote;
   final int? myRating;
@@ -100,6 +105,7 @@ class BookNotesPage extends StatefulWidget {
 class _BookNotesPageState extends State<BookNotesPage> {
   late List<String> notes;
   late List<String> quotes;
+  late List<String> quoteNotes;
   late bool favorite;
   late int? _myRating;
   late String _myReview;
@@ -117,6 +123,7 @@ class _BookNotesPageState extends State<BookNotesPage> {
     super.initState();
     notes = List.of(widget.notes);
     quotes = List.of(widget.quotes);
+    quoteNotes = _alignedQuoteNotes(widget.quoteNotes, quotes.length);
     favorite = widget.isFavorite;
     _myRating = widget.myRating;
     _myReview = _currentReview(widget.ratings);
@@ -130,10 +137,16 @@ class _BookNotesPageState extends State<BookNotesPage> {
           ?.review ??
       '';
 
+  List<String> _alignedQuoteNotes(List<String> values, int length) =>
+      List.generate(
+        length,
+        (index) => index < values.length ? values[index] : '',
+      );
+
   Future<void> editEntry({required bool quote, int? index}) async {
     if (!widget.canEdit) return;
     final entries = quote ? quotes : notes;
-    final value = await showModalBottomSheet<String>(
+    final value = await showModalBottomSheet<_EntryEditResult>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -141,23 +154,36 @@ class _BookNotesPageState extends State<BookNotesPage> {
       builder: (_) => _EntryEditorSheet(
         quote: quote,
         initialText: index == null ? '' : entries[index],
+        initialNote: quote && index != null ? quoteNotes[index] : '',
         onScanQuote: quote ? widget.onScanQuote : null,
       ),
     );
-    if (value == null || value.isEmpty || !mounted) return;
-
+    if (value == null || value.text.isEmpty || !mounted) return;
     final updated = List<String>.of(entries);
+    final updatedQuoteNotes = List<String>.of(quoteNotes);
     if (index == null) {
-      updated.add(value);
+      updated.add(value.text);
+      if (quote) updatedQuoteNotes.add(value.note);
     } else {
-      updated[index] = value;
+      updated[index] = value.text;
+      if (quote) updatedQuoteNotes[index] = value.note;
     }
-    await save(quote ? notes : updated, quote ? updated : quotes);
+    await save(
+      quote ? notes : updated,
+      quote ? updated : quotes,
+      updatedQuoteNotes,
+    );
   }
 
   Future<void> removeEntry({required bool quote, required int index}) async {
     final updated = List<String>.of(quote ? quotes : notes)..removeAt(index);
-    await save(quote ? notes : updated, quote ? updated : quotes);
+    final updatedQuoteNotes = List<String>.of(quoteNotes);
+    if (quote) updatedQuoteNotes.removeAt(index);
+    await save(
+      quote ? notes : updated,
+      quote ? updated : quotes,
+      updatedQuoteNotes,
+    );
   }
 
   Future<void> manageSpotifyMusic({int? index}) async {
@@ -309,10 +335,15 @@ class _BookNotesPageState extends State<BookNotesPage> {
     }
   }
 
-  Future<void> save(List<String> nextNotes, List<String> nextQuotes) async {
+  Future<void> save(
+    List<String> nextNotes,
+    List<String> nextQuotes,
+    List<String> nextQuoteNotes,
+  ) async {
     if (saving || !widget.canEdit) return;
     final previousNotes = List<String>.of(notes);
     final previousQuotes = List<String>.of(quotes);
+    final previousQuoteNotes = List<String>.of(quoteNotes);
     final nextNotesCopy = List<String>.of(nextNotes);
     final nextQuotesCopy = List<String>.of(nextQuotes);
     final token = Object();
@@ -320,6 +351,7 @@ class _BookNotesPageState extends State<BookNotesPage> {
     setState(() {
       notes = nextNotesCopy;
       quotes = nextQuotesCopy;
+      quoteNotes = List.of(nextQuoteNotes);
     });
     unawaited(
       _persistNotes(
@@ -327,6 +359,8 @@ class _BookNotesPageState extends State<BookNotesPage> {
         nextQuotesCopy,
         previousNotes,
         previousQuotes,
+        List.of(nextQuoteNotes),
+        previousQuoteNotes,
         token,
       ),
     );
@@ -485,15 +519,22 @@ class _BookNotesPageState extends State<BookNotesPage> {
     List<String> nextQuotes,
     List<String> previousNotes,
     List<String> previousQuotes,
+    List<String> nextQuoteNotes,
+    List<String> previousQuoteNotes,
     Object token,
   ) async {
     try {
-      await widget.onSave(nextNotes, nextQuotes);
+      if (widget.onSaveWithQuoteNotes case final saveWithNotes?) {
+        await saveWithNotes(nextNotes, nextQuotes, nextQuoteNotes);
+      } else {
+        await widget.onSave(nextNotes, nextQuotes);
+      }
     } catch (_) {
       if (mounted && _notesRequest == token) {
         setState(() {
           notes = previousNotes;
           quotes = previousQuotes;
+          quoteNotes = previousQuoteNotes;
         });
         ScaffoldMessenger.of(
           context,
@@ -874,6 +915,7 @@ class _BookNotesPageState extends State<BookNotesPage> {
     if (_notesRequest == null) {
       notes = List.of(widget.notes);
       quotes = List.of(widget.quotes);
+      quoteNotes = _alignedQuoteNotes(widget.quoteNotes, quotes.length);
     }
     if (_favoriteRequest == null && oldWidget.isFavorite != widget.isFavorite) {
       favorite = widget.isFavorite;

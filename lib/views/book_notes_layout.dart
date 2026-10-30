@@ -189,16 +189,29 @@ extension _BookNotesLayout on _BookNotesPageState {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(top: 10),
-                        child: SelectableText(
-                          entries[index],
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.45,
-                            fontStyle: quote
-                                ? FontStyle.italic
-                                : FontStyle.normal,
-                            color: scheme.onSurface,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SelectableText(
+                              entries[index],
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.45,
+                                fontStyle: quote
+                                    ? FontStyle.italic
+                                    : FontStyle.normal,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                            if (quote && quoteNotes[index].isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                'Note',
+                                style: Theme.of(context).textTheme.labelSmall,
+                              ),
+                              SelectableText(quoteNotes[index]),
+                            ],
+                          ],
                         ),
                       ),
                     ),

@@ -1,14 +1,22 @@
 part of 'book_notes_page.dart';
 
+class _EntryEditResult {
+  const _EntryEditResult(this.text, this.note);
+  final String text;
+  final String note;
+}
+
 class _EntryEditorSheet extends StatefulWidget {
   const _EntryEditorSheet({
     required this.quote,
     required this.initialText,
+    required this.initialNote,
     this.onScanQuote,
   });
 
   final bool quote;
   final String initialText;
+  final String initialNote;
   final Future<String?> Function()? onScanQuote;
 
   @override
@@ -20,11 +28,15 @@ class _EntryEditorSheetState extends State<_EntryEditorSheet> {
     text: widget.initialText,
   );
 
+  late final TextEditingController _noteController = TextEditingController(
+    text: widget.initialNote,
+  );
   bool _scanning = false;
 
   @override
   void dispose() {
     _controller.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -106,6 +118,18 @@ class _EntryEditorSheetState extends State<_EntryEditorSheet> {
                 ),
               ),
             ],
+            if (widget.quote)
+              TextFormField(
+                controller: _noteController,
+                minLines: 2,
+                maxLines: 4,
+                maxLength: 2000,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: 'Note (optional)',
+                  hintText: 'Add a note about this quote',
+                ),
+              ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -118,7 +142,13 @@ class _EntryEditorSheetState extends State<_EntryEditorSheet> {
                 FilledButton(
                   onPressed: _controller.text.trim().isEmpty || _scanning
                       ? null
-                      : () => Navigator.pop(context, _controller.text.trim()),
+                      : () => Navigator.pop(
+                          context,
+                          _EntryEditResult(
+                            _controller.text.trim(),
+                            _noteController.text.trim(),
+                          ),
+                        ),
                   child: const Text('Save'),
                 ),
               ],

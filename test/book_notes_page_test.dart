@@ -31,7 +31,7 @@ void main() {
 
     await tester.tap(find.text('Add quote'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'İlk alıntı');
+    await tester.enterText(find.byType(TextField).first, 'İlk alıntı');
     await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
@@ -68,7 +68,9 @@ void main() {
     await tester.tap(find.text('Transfer from photo'));
     await tester.pumpAndSettle();
 
-    final field = tester.widget<TextFormField>(find.byType(TextFormField));
+    final field = tester.widget<TextFormField>(
+      find.byType(TextFormField).first,
+    );
     expect(field.controller?.text, 'Fotoğraftan okunan alıntı');
 
     await tester.pump();
@@ -76,6 +78,49 @@ void main() {
     await tester.pumpAndSettle();
     expect(savedQuotes, ['Fotoğraftan okunan alıntı']);
   });
+
+  testWidgets(
+    'quote notes are saved and remain attached when a quote is deleted',
+    (tester) async {
+      List<String>? savedQuotes;
+      List<String>? savedQuoteNotes;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BookNotesPage(
+            title: 'Book',
+            notes: const [],
+            quotes: const ['Old quote'],
+            onSave: (_, _) async {},
+            onSaveWithQuoteNotes: (_, quotes, quoteNotes) async {
+              savedQuotes = quotes;
+              savedQuoteNotes = quoteNotes;
+            },
+          ),
+        ),
+      );
+      await tester.tap(find.text('Add quote'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).first, 'New quote');
+      await tester.enterText(find.byType(TextFormField).last, 'My thoughts');
+      await tester.ensureVisible(find.widgetWithText(FilledButton, 'Save'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+      expect(savedQuotes, ['Old quote', 'New quote']);
+      expect(savedQuoteNotes, ['', 'My thoughts']);
+      await tester.scrollUntilVisible(
+        find.text('My thoughts'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('My thoughts'), findsOneWidget);
+      await tester.tap(find.byTooltip('Quote actions').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete').last);
+      await tester.pumpAndSettle();
+      expect(savedQuotes, ['New quote']);
+      expect(savedQuoteNotes, ['My thoughts']);
+    },
+  );
 
   testWidgets('favorite button toggles and reports the new state', (
     tester,

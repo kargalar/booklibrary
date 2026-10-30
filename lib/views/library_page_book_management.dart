@@ -88,6 +88,11 @@ extension _LibraryPageStatePart4 on _LibraryPageState {
                         : null,
                     notes: entries(data['notes']),
                     quotes: entries(data['quotes']),
+                    quoteNotes: data['quoteNotes'] is Iterable
+                        ? (data['quoteNotes'] as Iterable)
+                              .map((value) => value is String ? value : '')
+                              .toList()
+                        : const [],
                     onScanQuote: _canCaptureCover && _canManageBook(data)
                         ? () async {
                             final scanned = await Navigator.of(context)
@@ -99,6 +104,21 @@ extension _LibraryPageStatePart4 on _LibraryPageState {
                             return scanned;
                           }
                         : null,
+                    onSaveWithQuoteNotes: (notes, quotes, quoteNotes) =>
+                        _updateBookOptimistically(
+                          current,
+                          {
+                            'notes': notes,
+                            'quotes': quotes,
+                            'quoteNotes': quoteNotes,
+                          },
+                          () => vm.update(current.id, {
+                            'notes': notes,
+                            'quotes': quotes,
+                            'quoteNotes': quoteNotes,
+                          }),
+                          failureMessage: 'Could not save notes.',
+                        ),
                     onSave: (notes, quotes) => _updateBookOptimistically(
                       current,
                       {'notes': notes, 'quotes': quotes},

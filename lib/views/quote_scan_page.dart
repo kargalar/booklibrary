@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,9 @@ class _QuoteScanPageState extends State<QuoteScanPage> {
   final TextEditingController _textController = TextEditingController();
   String? _imagePath;
   bool _busy = false;
+  Size? _imageSize;
+  List<TextLine> _lines = [];
+  final Set<int> _selectedLines = {};
 
   bool get _isSupported =>
       !kIsWeb &&
@@ -41,16 +45,32 @@ class _QuoteScanPageState extends State<QuoteScanPage> {
       );
       if (image == null || !mounted) return;
 
-      setState(() => _imagePath = image.path);
+      final bytes = await File(image.path).readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final size = Size(
+        frame.image.width.toDouble(),
+        frame.image.height.toDouble(),
+      );
+      frame.image.dispose();
+      codec.dispose();
+      if (!mounted) return;
+      setState(() {
+        _imagePath = image.path;
+        _imageSize = size;
+        _lines = [];
+        _selectedLines.clear();
+        _setText('');
+      });
       final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
       try {
         final recognized = await recognizer.processImage(
           InputImage.fromFilePath(image.path),
         );
         if (!mounted) return;
-        final text = recognized.text.trim();
-        _setText(text);
-        if (text.isEmpty) {
+        final lines = recognized.blocks.expand((block) => block.lines).toList();
+        setState(() => _lines = lines);
+        if (lines.isEmpty) {
           _showMessage('No readable text was found in the photo.');
         }
       } finally {
@@ -70,6 +90,68 @@ class _QuoteScanPageState extends State<QuoteScanPage> {
     _textController.value = TextEditingValue(
       text: value,
       selection: TextSelection.collapsed(offset: value.length),
+    );
+  }
+
+  void _toggleLine(int index) {
+    setState(() {
+      if (!_selectedLines.add(index)) _selectedLines.remove(index);
+      _setText(
+        [
+          for (var i = 0; i < _lines.length; i++)
+            if (_selectedLines.contains(i)) _lines[i].text,
+        ].join('\n'),
+      );
+    });
+  }
+
+  Widget _photoSelector(ColorScheme scheme) {
+    final size = _imageSize!;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final scale = width / size.width;
+        return AspectRatio(
+          aspectRatio: size.width / size.height,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.file(
+                  File(_imagePath!),
+                  fit: BoxFit.fill,
+                  errorBuilder: (_, _, _) =>
+                      Center(child: Text('The photo could not be previewed.')),
+                ),
+                for (var i = 0; i < _lines.length; i++)
+                  Positioned(
+                    left: _lines[i].boundingBox.left * scale,
+                    top: _lines[i].boundingBox.top * scale,
+                    width: _lines[i].boundingBox.width * scale,
+                    height: _lines[i].boundingBox.height * scale,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _busy ? null : () => _toggleLine(i),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _selectedLines.contains(i)
+                              ? scheme.primary.withAlpha(100)
+                              : scheme.primary.withAlpha(25),
+                          border: Border.all(
+                            color: scheme.primary.withAlpha(
+                              _selectedLines.contains(i) ? 230 : 100,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -115,7 +197,7 @@ class _QuoteScanPageState extends State<QuoteScanPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Select a page from camera or gallery. You can select the detected text below, copy it, edit it and save it as a quote.',
+                    'Take a photo or choose one from your gallery, then tap the text lines you want. Edit the selected text below before adding it as a quote.',
                     style: TextStyle(color: scheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 18),
@@ -144,21 +226,11 @@ class _QuoteScanPageState extends State<QuoteScanPage> {
                   ),
                   if (_imagePath != null) ...[
                     const SizedBox(height: 18),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
-                      child: Image.file(
-                        File(_imagePath!),
-                        height: 210,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          height: 210,
-                          color: scheme.surfaceContainerHighest,
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'The photo could not be previewed.',
-                          ),
-                        ),
-                      ),
+                    _photoSelector(scheme),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap highlighted lines to select or deselect them.',
+                      style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   ],
                   const SizedBox(height: 18),
@@ -166,7 +238,7 @@ class _QuoteScanPageState extends State<QuoteScanPage> {
                     const LinearProgressIndicator()
                   else
                     Text(
-                      'Detected text',
+                      'Selected text',
                       style: Theme.of(context).textTheme.titleMedium
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
@@ -180,8 +252,8 @@ class _QuoteScanPageState extends State<QuoteScanPage> {
                     textCapitalization: TextCapitalization.sentences,
                     onChanged: (_) => setState(() {}),
                     decoration: const InputDecoration(
-                      hintText: 'The text will appear here',
-                      helperText: 'Press and hold to select and copy text.',
+                      hintText: 'Selected text will appear here',
+                      helperText: 'Review and edit the selected text before continuing.',
                       alignLabelWithHint: true,
                     ),
                   ),
